@@ -13,6 +13,10 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,
+    "paths": {
+  "@/*": ["./src/*"],
+  "@workpulse/types": ["../../packages/types/src"]
+}
     "plugins": [
       {
         "name": "next"
