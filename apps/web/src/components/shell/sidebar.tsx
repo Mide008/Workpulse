@@ -38,42 +38,34 @@ interface SidebarProps {
 
 export default function Sidebar({ user, open, onClose }: SidebarProps) {
   const pathname = usePathname()
-
-  const filteredNav = NAV.filter(
-    (item) => !item.minLevel || user.roleLevel <= item.minLevel
-  )
+  const filteredNav = NAV.filter(item => !item.minLevel || user.roleLevel <= item.minLevel)
 
   return (
     <>
       {/* Mobile overlay */}
       {open && (
         <div
-          className="fixed inset-0 bg-black/60 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/70 z-40 lg:hidden backdrop-blur-sm"
           onClick={onClose}
         />
       )}
 
-      <aside
-        className={cn(
-          'fixed lg:static inset-y-0 left-0 z-50 w-64 flex flex-col',
-          'bg-slate-900 border-r border-white/5 transition-transform duration-300',
-          open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-        )}
-      >
+      <aside className={cn(
+        'fixed lg:static inset-y-0 left-0 z-50 w-64 flex flex-col',
+        'bg-slate-900 border-r border-white/5 transition-transform duration-300 ease-out',
+        open ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+      )}>
         {/* Logo */}
-        <div className="flex items-center justify-between px-5 h-16 border-b border-white/5">
+        <div className="flex items-center justify-between px-5 h-16 border-b border-white/5 shrink-0">
           <WorkPulseLogo />
-          <button
-            onClick={onClose}
-            className="lg:hidden p-1 text-slate-400 hover:text-white transition"
-          >
+          <button onClick={onClose} className="lg:hidden p-1.5 text-slate-400 hover:text-white transition rounded-lg hover:bg-white/5">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Workspace badge */}
-        <div className="px-4 py-3 border-b border-white/5">
-          <div className="flex items-center gap-3 px-2 py-2 rounded-lg bg-white/5">
+        <div className="px-4 py-3 border-b border-white/5 shrink-0">
+          <div className="flex items-center gap-3 px-2 py-2 rounded-xl bg-white/5">
             <div
               className="w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold text-white shrink-0"
               style={{ backgroundColor: user.primaryColor }}
@@ -97,9 +89,9 @@ export default function Sidebar({ user, open, onClose }: SidebarProps) {
                 href={item.href}
                 onClick={onClose}
                 className={cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition',
+                  'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
                   isActive
-                    ? 'bg-indigo-600 text-white'
+                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
                     : 'text-slate-400 hover:text-white hover:bg-white/5'
                 )}
               >
@@ -111,29 +103,20 @@ export default function Sidebar({ user, open, onClose }: SidebarProps) {
         </nav>
 
         {/* Bottom */}
-        <div className="px-3 py-4 border-t border-white/5 space-y-0.5">
-          <Link
-            href="/notifications"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm
-              text-slate-400 hover:text-white hover:bg-white/5 transition"
-          >
+        <div className="px-3 py-4 border-t border-white/5 space-y-0.5 shrink-0">
+          <Link href="/notifications" onClick={onClose}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-white hover:bg-white/5 transition">
             <Bell className="w-4 h-4" />
             Notifications
           </Link>
-          <Link
-            href="/settings"
-            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm
-              text-slate-400 hover:text-white hover:bg-white/5 transition"
-          >
+          <Link href="/settings" onClick={onClose}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-white hover:bg-white/5 transition">
             <Settings className="w-4 h-4" />
             Settings
           </Link>
           <form action={signOut}>
-            <button
-              type="submit"
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm
-                text-slate-400 hover:text-red-400 hover:bg-red-500/5 transition"
-            >
+            <button type="submit"
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-slate-400 hover:text-red-400 hover:bg-red-500/5 transition">
               <LogOut className="w-4 h-4" />
               Sign out
             </button>

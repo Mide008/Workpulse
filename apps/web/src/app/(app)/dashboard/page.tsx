@@ -1,7 +1,5 @@
-import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { getCurrentUser } from '@/lib/actions/auth'
 import { redirect } from 'next/navigation'
-import DashboardClient from './dashboard-client'
 
 export const metadata = { title: 'Dashboard' }
 
@@ -9,58 +7,25 @@ export default async function DashboardPage() {
   const user = await getCurrentUser()
   if (!user) redirect('/login')
 
-  const supabase = await createServerSupabaseClient()
-
-  const { data: tasks } = await supabase
-    .from('tasks')
-    .select('id, title, status, priority, due_date, progress')
-    .eq('assigned_to', user.id)
-    .is('deleted_at', null)
-    .order('created_at', { ascending: false })
-    .limit(20)
-
-  let teamTasks = null
-  if (user.roleLevel <= 2) {
-    const { data } = await supabase
-      .from('tasks')
-      .select('id, status, priority, assigned_to')
-      .eq('workspace_id', user.workspaceId)
-      .is('deleted_at', null)
-    teamTasks = data
-  }
-
-  const { data: projects } = await supabase
-    .from('projects')
-    .select('id, name, status, priority, progress, end_date, color')
-    .eq('workspace_id', user.workspaceId)
-    .is('deleted_at', null)
-    .order('updated_at', { ascending: false })
-    .limit(5)
-
-  let members = null
-  if (user.roleLevel <= 2) {
-    const { data } = await supabase
-      .from('users')
-      .select('id, full_name, avatar_url, job_title, role:roles(name)')
-      .eq('workspace_id', user.workspaceId)
-      .eq('is_active', true)
-      .limit(12)
-    members = data
-  }
-
   return (
-    <DashboardClient
-      user={{
-        id: user.id,
-        fullName: user.fullName,
-        workspaceName: user.workspaceName,
-        roleLevel: user.roleLevel,
-        primaryColor: user.primaryColor,
-      }}
-      tasks={(tasks as any[]) ?? []}
-      teamTasks={(teamTasks as any[]) ?? null}
-      projects={(projects as any[]) ?? []}
-      members={(members as any[]) ?? null}
-    />
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-white">
+          Welcome, {user.fullName?.split(' ')[0]}
+        </h1>
+        <p className="text-slate-400 text-sm mt-1">
+          Workspace: {user.workspaceName}
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {['Active Tasks', 'Completed', 'Projects', 'Team Members'].map(label => (
+          <div key={label} className="bg-slate-900 border border-white/5 rounded-2xl p-4">
+            <p className="text-slate-400 text-sm">{label}</p>
+            <p className="text-2xl font-bold text-white mt-2">—</p>
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }
