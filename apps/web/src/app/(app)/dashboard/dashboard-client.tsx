@@ -1,38 +1,31 @@
 'use client'
 
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { CheckSquare, Clock, AlertTriangle, TrendingUp, FolderKanban, ArrowRight } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import {
+  CheckSquare, Clock, AlertTriangle, TrendingUp,
+  Plus, FolderKanban, ArrowRight,
+} from 'lucide-react'
+import { cn, formatDate } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { Badge, type BadgeVariant } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
-import { cn, formatDate, getInitials } from '@/lib/utils'
 
-interface Task {
-  id: string
-  title: string
-  status: string
-  priority: string
-  due_date: string | null
-  progress: number
+function getGreeting() {
+  const h = new Date().getHours()
+  if (h < 12) return 'Good morning'
+  if (h < 17) return 'Good afternoon'
+  return 'Good evening'
 }
 
-interface Project {
-  id: string
-  name: string
-  status: string
-  priority: string
-  progress: number
-  end_date: string | null
-  color: string
+const statusBadge: Record<string, BadgeVariant> = {
+  not_started: 'default', in_progress: 'info',
+  blocked: 'danger', review: 'purple', done: 'success',
 }
 
-interface Member {
-  id: string
-  full_name: string
-  avatar_url: string | null
-  job_title: string | null
-  role: { name: string } | null
+const priorityDot: Record<string, string> = {
+  critical: 'bg-red-500', high: 'bg-orange-500',
+  medium: 'bg-amber-400', low: 'bg-slate-400',
 }
 
 interface Props {
@@ -43,289 +36,158 @@ interface Props {
     roleLevel: number
     primaryColor: string
   }
-  tasks: Task[]
-  teamTasks: Task[] | null
-  projects: Project[]
-  members: Member[] | null
+  tasks: any[]
+  projects: any[]
 }
 
-const priorityDot: Record<string, string> = {
-  low: 'bg-slate-400',
-  medium: 'bg-amber-400',
-  high: 'bg-orange-500',
-  critical: 'bg-red-500',
-}
+export default function DashboardClient({ user, tasks, projects }: Props) {
+  const stats = {
+    total: tasks.length,
+    inProgress: tasks.filter(t => t.status === 'in_progress').length,
+    blocked: tasks.filter(t => t.status === 'blocked').length,
+    done: tasks.filter(t => t.status === 'done').length,
+  }
 
-const statusColor: Record<string, string> = {
-  not_started: 'text-slate-400',
-  in_progress: 'text-blue-400',
-  blocked: 'text-red-400',
-  review: 'text-purple-400',
-  done: 'text-green-400',
-}
+  const recentTasks = tasks
+    .filter(t => t.status !== 'done')
+    .slice(0, 6)
 
-const statusLabel: Record<string, string> = {
-  not_started: 'Not Started',
-  in_progress: 'In Progress',
-  blocked: 'Blocked',
-  review: 'In Review',
-  done: 'Done',
-}
-
-function getGreeting() {
-  const h = new Date().getHours()
-  if (h < 12) return 'morning'
-  if (h < 17) return 'afternoon'
-  return 'evening'
-}
-
-export default function DashboardClient({ user, tasks, teamTasks, projects, members }: Props) {
-  const total = tasks.length
-  const done = tasks.filter((t) => t.status === 'done').length
-  const inProgress = tasks.filter((t) => t.status === 'in_progress').length
-  const blocked = tasks.filter((t) => t.status === 'blocked').length
-  const overdue = tasks.filter(
-    (t) => t.due_date && new Date(t.due_date) < new Date() && t.status !== 'done'
-  ).length
-
-  const isManager = user.roleLevel <= 2
-
-  const stats = [
-    {
-      label: 'Total Tasks',
-      value: total,
-      icon: CheckSquare,
-      color: 'text-indigo-400',
-      bg: 'bg-indigo-500/10',
-    },
-    {
-      label: 'In Progress',
-      value: inProgress,
-      icon: Clock,
-      color: 'text-blue-400',
-      bg: 'bg-blue-500/10',
-    },
-    {
-      label: 'Blocked',
-      value: blocked,
-      icon: AlertTriangle,
-      color: 'text-red-400',
-      bg: 'bg-red-500/10',
-    },
-    {
-      label: 'Overdue',
-      value: overdue,
-      icon: TrendingUp,
-      color: 'text-amber-400',
-      bg: 'bg-amber-500/10',
-    },
-  ]
+  const activeProjects = projects
+    .filter(p => p.status === 'active' || p.status === 'paused')
+    .slice(0, 4)
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8">
-      {/* Greeting */}
-      <div>
-        <h1 className="text-2xl font-bold text-white">
-          Good {getGreeting()},{' '}
-          <span className="text-indigo-400">{user.fullName.split(' ')[0]}</span>
-        </h1>
-        <p className="text-slate-400 mt-1">
-          Here&apos;s what&apos;s happening in{' '}
-          <span className="text-slate-300">{user.workspaceName}</span> today.
-        </p>
+    <div className="max-w-7xl mx-auto space-y-6 animate-fade-in">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <p className="text-slate-400 text-sm">{getGreeting()}</p>
+          <h1 className="text-2xl font-bold text-white">{user.fullName}</h1>
+          <p className="text-slate-500 text-sm mt-0.5">{user.workspaceName}</p>
+        </div>
+        <Link href="/tasks/new">
+          <Button variant="primary" size="sm" icon={<Plus className="w-4 h-4" />}>
+            New Task
+          </Button>
+        </Link>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat) => (
-          <Card key={stat.label}>
-            <CardContent className="pt-5">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-slate-400 text-sm">{stat.label}</span>
-                <div className={cn('p-2 rounded-xl', stat.bg)}>
-                  <stat.icon className={cn('w-4 h-4', stat.color)} />
-                </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {[
+          { label: 'Total Tasks', value: stats.total, icon: CheckSquare, color: 'text-[var(--primary,#6366F1)]', bg: 'bg-[var(--primary,#6366F1)]/10' },
+          { label: 'In Progress', value: stats.inProgress, icon: Clock, color: 'text-blue-400', bg: 'bg-blue-500/10' },
+          { label: 'Blocked', value: stats.blocked, icon: AlertTriangle, color: 'text-red-400', bg: 'bg-red-500/10' },
+          { label: 'Done', value: stats.done, icon: TrendingUp, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+        ].map(stat => (
+          <div key={stat.label}
+            className="bg-slate-900/80 border border-white/[0.06] rounded-2xl p-5">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs text-slate-500">{stat.label}</span>
+              <div className={cn('p-2 rounded-xl', stat.bg)}>
+                <stat.icon className={cn('w-4 h-4', stat.color)} />
               </div>
-              <p className="text-3xl font-bold text-white">{stat.value}</p>
-            </CardContent>
-          </Card>
+            </div>
+            <p className={cn('text-3xl font-bold', stat.color)}>{stat.value}</p>
+          </div>
         ))}
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* My Tasks */}
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>My Tasks</CardTitle>
-                <Link
-                  href="/tasks"
-                  className="flex items-center gap-1 text-sm text-indigo-400 hover:text-indigo-300 transition"
-                >
-                  View all <ArrowRight className="w-3.5 h-3.5" />
+      <div className="grid lg:grid-cols-2 gap-6">
+        {/* Recent Tasks */}
+        <div className="bg-slate-900/80 border border-white/[0.06] rounded-2xl p-6">
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="font-semibold text-white flex items-center gap-2">
+              <CheckSquare className="w-4 h-4 text-slate-400" />
+              Active Tasks
+            </h2>
+            <Link href="/tasks">
+              <Button variant="ghost" size="xs" iconRight={<ArrowRight className="w-3.5 h-3.5" />}>
+                View all
+              </Button>
+            </Link>
+          </div>
+
+          {recentTasks.length === 0 ? (
+            <div className="text-center py-10">
+              <CheckSquare className="w-10 h-10 text-slate-700 mx-auto mb-2" />
+              <p className="text-slate-500 text-sm">No active tasks</p>
+              <Link href="/tasks/new">
+                <Button variant="secondary" size="xs" className="mt-3" icon={<Plus className="w-3.5 h-3.5" />}>
+                  Create task
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {recentTasks.map(task => (
+                <Link key={task.id} href={`/tasks/${task.id}`}>
+                  <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl
+                    hover:bg-white/5 transition group cursor-pointer">
+                    <div className={cn('w-2 h-2 rounded-full shrink-0',
+                      priorityDot[task.priority] ?? 'bg-slate-400')} />
+                    <span className="flex-1 text-sm text-slate-300 group-hover:text-white
+                      transition truncate">
+                      {task.title}
+                    </span>
+                    <Badge variant={statusBadge[task.status] ?? 'default'} className="shrink-0 text-xs">
+                      {task.status.replace('_', ' ')}
+                    </Badge>
+                  </div>
                 </Link>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-0">
-              {tasks.length === 0 ? (
-                <div className="text-center py-12">
-                  <CheckSquare className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-                  <p className="text-slate-400 font-medium">No tasks yet</p>
-                  <p className="text-slate-600 text-sm mt-1">Tasks assigned to you will appear here</p>
-                  <Link
-                    href="/tasks/new"
-                    className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-indigo-600
-                      hover:bg-indigo-500 text-white text-sm font-medium rounded-xl transition"
-                  >
-                    Create your first task
-                  </Link>
-                </div>
-              ) : (
-                <div className="space-y-1">
-                  {tasks.slice(0, 8).map((task) => (
-                    <Link
-                      key={task.id}
-                      href={`/tasks/${task.id}`}
-                      className="flex items-center gap-3 px-3 py-3 rounded-xl
-                        hover:bg-white/5 transition group"
-                    >
-                      <div className={cn('w-2 h-2 rounded-full shrink-0', priorityDot[task.priority])} />
-                      <span className="flex-1 text-sm text-slate-300 group-hover:text-white
-                        transition truncate">
-                        {task.title}
-                      </span>
-                      <span className={cn('text-xs font-medium shrink-0', statusColor[task.status])}>
-                        {statusLabel[task.status]}
-                      </span>
-                      {task.due_date && (
-                        <span
-                          className={cn(
-                            'text-xs shrink-0',
-                            new Date(task.due_date) < new Date() && task.status !== 'done'
-                              ? 'text-red-400'
-                              : 'text-slate-500'
-                          )}
-                        >
-                          {formatDate(task.due_date)}
-                        </span>
-                      )}
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Projects */}
-        <div>
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Projects</CardTitle>
-                <Link
-                  href="/projects"
-                  className="flex items-center gap-1 text-sm text-indigo-400 hover:text-indigo-300 transition"
-                >
-                  View all <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-0">
-              {projects.length === 0 ? (
-                <div className="text-center py-12">
-                  <FolderKanban className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-                  <p className="text-slate-400 font-medium">No projects yet</p>
-                  <Link
-                    href="/projects/new"
-                    className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-indigo-600
-                      hover:bg-indigo-500 text-white text-sm font-medium rounded-xl transition"
-                  >
-                    Create project
-                  </Link>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {projects.map((project) => (
-                    <Link
-                      key={project.id}
-                      href={`/projects/${project.id}`}
-                      className="block px-3 py-3 rounded-xl hover:bg-white/5 transition group"
-                    >
-                      <div className="flex items-center gap-2 mb-2">
-                        <div
-                          className="w-2.5 h-2.5 rounded-full shrink-0"
-                          style={{ backgroundColor: project.color }}
-                        />
-                        <span className="text-sm text-slate-300 group-hover:text-white
-                          transition truncate font-medium">
+        <div className="bg-slate-900/80 border border-white/[0.06] rounded-2xl p-6">
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="font-semibold text-white flex items-center gap-2">
+              <FolderKanban className="w-4 h-4 text-slate-400" />
+              Projects
+            </h2>
+            <Link href="/projects">
+              <Button variant="ghost" size="xs" iconRight={<ArrowRight className="w-3.5 h-3.5" />}>
+                View all
+              </Button>
+            </Link>
+          </div>
+
+          {activeProjects.length === 0 ? (
+            <div className="text-center py-10">
+              <FolderKanban className="w-10 h-10 text-slate-700 mx-auto mb-2" />
+              <p className="text-slate-500 text-sm">No active projects</p>
+              <Link href="/projects/new">
+                <Button variant="secondary" size="xs" className="mt-3" icon={<Plus className="w-3.5 h-3.5" />}>
+                  Create project
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {activeProjects.map(project => (
+                <Link key={project.id} href={`/projects/${project.id}`}>
+                  <div className="p-3 rounded-xl hover:bg-white/5 transition group cursor-pointer">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-3 h-3 rounded-full shrink-0"
+                          style={{ backgroundColor: project.color }} />
+                        <span className="text-sm font-medium text-slate-300 group-hover:text-white
+                          transition truncate">
                           {project.name}
                         </span>
                       </div>
-                      <Progress value={project.progress} className="mb-1.5" />
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-slate-500">{project.progress}% complete</span>
-                        {project.end_date && (
-                          <span className="text-xs text-slate-500">{formatDate(project.end_date)}</span>
-                        )}
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                      <span className="text-xs text-slate-500 shrink-0 ml-2">{project.progress}%</span>
+                    </div>
+                    <Progress value={project.progress} size="sm" animated />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Team overview — managers only */}
-      {isManager && members && members.length > 0 && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Team Overview</CardTitle>
-              <Link
-                href="/team"
-                className="flex items-center gap-1 text-sm text-indigo-400 hover:text-indigo-300 transition"
-              >
-                Full view <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {members.map((member) => {
-                const memberTasks = teamTasks?.filter((t: any) => t.assigned_to === member.id) ?? []
-                const memberDone = memberTasks.filter((t: any) => t.status === 'done').length
-                const memberTotal = memberTasks.length
-                return (
-                  <Link
-                    key={member.id}
-                    href={`/team/${member.id}`}
-                    className="flex items-center gap-3 p-3 rounded-xl border border-white/5
-                      hover:border-indigo-500/30 hover:bg-white/5 transition"
-                  >
-                    <Avatar size="md" className="ring-2 ring-slate-900">
-                    {member.avatar_url ? (
-                    <AvatarImage src={member.avatar_url} alt={member.full_name} />
-                     ) : (
-                     <AvatarFallback>{getInitials(member.full_name)}</AvatarFallback>
-                      )}
-                    </Avatar>
-                    <div className="min-w-0">
-                      <p className="text-white text-sm font-medium truncate">{member.full_name}</p>
-                      <p className="text-slate-500 text-xs">
-                        {memberDone}/{memberTotal} tasks
-                      </p>
-                    </div>
-                  </Link>
-                )
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }

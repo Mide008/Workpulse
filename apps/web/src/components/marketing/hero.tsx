@@ -75,7 +75,7 @@ export default function HeroSection() {
           transition={{ duration: 0.5, delay: 0.3 }}
           className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12"
         >
-          <Link href="/signup"
+          <Link href="/onboarding/workspace"
             className="group flex items-center gap-2 px-8 py-4 bg-indigo-600 hover:bg-indigo-500
               text-white font-semibold rounded-2xl transition-all shadow-2xl
               shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:-translate-y-0.5 text-base">

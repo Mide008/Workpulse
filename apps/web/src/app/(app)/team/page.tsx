@@ -8,7 +8,7 @@ export const metadata = { title: 'Team' }
 export default async function TeamPage() {
   const user = await getCurrentUser()
   if (!user) redirect('/login')
-  if (user.roleLevel > 3) redirect('/dashboard')
+  // Allow all roles to view team — managers see full detail, staff see basic view
 
   const supabase = await createServerSupabaseClient()
 

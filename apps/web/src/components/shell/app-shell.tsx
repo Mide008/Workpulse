@@ -26,7 +26,10 @@ export default function AppShell({ user, children }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
-    <div className="flex h-screen bg-slate-950 overflow-hidden">
+    <div
+      className="flex h-screen bg-slate-950 overflow-hidden"
+      style={{ '--primary': user.primaryColor } as React.CSSProperties}
+    >
       <Sidebar user={user} open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <Header user={user} onMenuClick={() => setSidebarOpen(true)} />

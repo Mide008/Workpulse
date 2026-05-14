@@ -67,10 +67,14 @@ export default function Sidebar({ user, open, onClose }: SidebarProps) {
         <div className="px-4 py-3 border-b border-white/5 shrink-0">
           <div className="flex items-center gap-3 px-2 py-2 rounded-xl bg-white/5">
             <div
-              className="w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold text-white shrink-0"
+              className="w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold text-white shrink-0 overflow-hidden"
               style={{ backgroundColor: user.primaryColor }}
             >
-              {user.workspaceName.charAt(0).toUpperCase()}
+              {user.workspaceLogo ? (
+                <img src={user.workspaceLogo} alt="Logo" className="w-full h-full object-cover" />
+              ) : (
+                user.workspaceName.charAt(0).toUpperCase()
+              )}
             </div>
             <div className="min-w-0">
               <p className="text-white text-sm font-medium truncate">{user.workspaceName}</p>
@@ -91,9 +95,10 @@ export default function Sidebar({ user, open, onClose }: SidebarProps) {
                 className={cn(
                   'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
                   isActive
-                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
+                    ? 'text-white shadow-lg'
                     : 'text-slate-400 hover:text-white hover:bg-white/5'
                 )}
+                style={isActive ? { backgroundColor: user.primaryColor } : undefined}
               >
                 <item.icon className="w-4 h-4 shrink-0" />
                 {item.label}

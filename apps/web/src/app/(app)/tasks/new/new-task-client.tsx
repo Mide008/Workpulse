@@ -72,16 +72,21 @@ export default function NewTaskClient({ projects, members, currentUserId }: {
         dueDate: data.dueDate ? new Date(data.dueDate).toISOString() : undefined,
         estimatedHours: data.estimatedHours ? parseFloat(data.estimatedHours) : undefined,
         projectId: data.projectId || undefined,
-        assignedTo: data.assignedTo || undefined,
+        assignedTo: data.assignedTo || currentUserId,
         category: data.category || undefined,
         tags: data.tags ? data.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
       }),
     })
 
-    if (!res.ok) { toast.error('Failed to create task'); return }
-    const { task } = await res.json()
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      toast.error('Failed to create task: ' + (err.error ?? res.statusText))
+      return
+    }
+
     toast.success('Task created')
-    router.push(`/tasks/${task.id}`)
+    router.push('/tasks')
+    router.refresh()
   }
 
   return (

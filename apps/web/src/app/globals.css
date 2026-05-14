@@ -118,3 +118,55 @@ html {
 * {
   -webkit-overflow-scrolling: touch;
 }
+
+/* Ensure dropdowns appear above other content */
+[data-radix-popper-content-wrapper] {
+  z-index: 50 !important;
+}
+
+:root {
+  --primary: #6366F1; /* default */
+}
+
+/* Then use var(--primary) in Tailwind config */
+
+a, button.bg-indigo-600, .bg-indigo-600, .text-[var(--primary)], .hover\:text-indigo-300 {
+  /* This won't work directly; we'll use Tailwind arbitrary values */
+}
+
+[data-radix-select-content],
+[data-radix-popper-content-wrapper] {
+  z-index: 100 !important;
+  position: relative;
+}
+
+/* Ensure all Radix dropdowns appear above content */
+[data-radix-select-content],
+[data-radix-popper-content-wrapper] {
+  z-index: 100 !important;
+  position: relative;
+}
+
+/* Dark background for select options */
+select option {
+  background-color: #0f172a; /* slate-900 */
+  color: #f8fafc;            /* slate-50 */
+}
+
+/* Force all select options (including Radix) to use dark background */
+select option,
+[data-radix-select-content] option,
+[data-radix-select-viewport] option,
+[data-radix-popper-content-wrapper] option {
+  background-color: #0f172a !important; /* slate-900 */
+  color: #f8fafc !important;            /* slate-50 */
+}
+
+/* Force ALL select options to be dark, including Radix portals */
+select option,
+[data-radix-select-content] option,
+[data-radix-select-viewport] option,
+[data-radix-popper-content-wrapper] option {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+}

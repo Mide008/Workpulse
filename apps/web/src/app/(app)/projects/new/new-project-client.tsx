@@ -53,7 +53,7 @@ export default function NewProjectClient({ members, teams, currentUserId }: {
   const priority = watch('priority')
 
   function toggleMember(id: string) {
-    if (id === currentUserId) return // can't remove creator
+    if (id === currentUserId) return
     setSelectedMembers(prev =>
       prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id]
     )
@@ -72,10 +72,15 @@ export default function NewProjectClient({ members, teams, currentUserId }: {
         endDate: data.endDate || undefined,
       }),
     })
-    if (!res.ok) { toast.error('Failed to create project'); return }
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      toast.error('Failed to create project: ' + (err.error ?? res.statusText))
+      return
+    }
     const { project } = await res.json()
     toast.success('Project created')
-    router.push(`/projects/${project.id}`)
+    router.push('/projects')
+    router.refresh()
   }
 
   return (
@@ -239,10 +244,10 @@ export default function NewProjectClient({ members, teams, currentUserId }: {
                     </Avatar>
                     <div className="min-w-0">
                       <p className="text-xs font-medium text-white truncate">{m.full_name}</p>
-                      {isCreator && <p className="text-[10px] text-indigo-400">Owner</p>}
+                      {isCreator && <p className="text-[10px] text-[var(--primary)]">Owner</p>}
                     </div>
                     {isSelected && !isCreator && (
-                      <Check className="w-3 h-3 text-indigo-400 ml-auto shrink-0" />
+                      <Check className="w-3 h-3 text-[var(--primary)] ml-auto shrink-0" />
                     )}
                   </button>
                 )

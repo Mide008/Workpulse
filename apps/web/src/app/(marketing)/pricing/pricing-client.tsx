@@ -21,7 +21,7 @@ const PLANS = [
       '1GB file storage',
     ],
     cta: 'Get started free',
-    href: '/signup',
+    href: '/onboarding/workspace',
     variant: 'outline' as const,
   },
   {
@@ -44,7 +44,7 @@ const PLANS = [
       'Priority email support',
     ],
     cta: 'Start Pro trial',
-    href: '/signup?plan=pro',
+    href: '/onboarding/workspace?plan=pro',
     variant: 'primary' as const,
   },
   {

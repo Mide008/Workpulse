@@ -109,7 +109,7 @@ export default function InvitePage() {
 
       <button
         onClick={addRow}
-        className="flex items-center gap-2 text-indigo-400 hover:text-indigo-300
+        className="flex items-center gap-2 text-[var(--primary)] hover:text-[var(--primary)]
           text-sm transition mb-8"
       >
         <Plus className="w-4 h-4" />

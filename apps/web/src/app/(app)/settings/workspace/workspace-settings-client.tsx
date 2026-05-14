@@ -32,12 +32,24 @@ export default function WorkspaceSettingsClient({ workspace, roles, currentUser 
     setSaving(true)
     const { error } = await supabase
       .from('workspaces')
-      .update({ name: data.name, industry: data.industry, primary_color: primaryColor })
+      .update({
+        name: data.name,
+        industry: data.industry,
+        primary_color: primaryColor,
+      })
       .eq('id', workspace.id)
 
-    if (error) { toast.error('Failed to save'); setSaving(false); return }
-    toast.success('Workspace updated')
+    if (error) {
+      toast.error('Failed to save changes')
+      setSaving(false)
+      return
+    }
+
+    toast.success('Workspace updated — refresh to see changes across the app')
     setSaving(false)
+
+    // Reload the page so the sidebar and other components pick up the new colour / name
+    setTimeout(() => window.location.reload(), 1200)
   }
 
   async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -53,7 +65,7 @@ export default function WorkspaceSettingsClient({ workspace, roles, currentUser 
     const { data } = supabase.storage.from('workspace-assets').getPublicUrl(path)
     setLogoPreview(data.publicUrl)
     await supabase.from('workspaces').update({ logo_url: data.publicUrl }).eq('id', workspace.id)
-    toast.success('Logo updated')
+    toast.success('Logo updated — refresh to see it in the sidebar')
   }
 
   return (

@@ -29,6 +29,16 @@ const statusBadge: Record<string, BadgeVariant> = {
   active: 'info', completed: 'success', paused: 'warning', cancelled: 'danger',
 }
 
+// Helper to safely format a date, returning '—' if invalid
+function safeFormatDate(date: string | null) {
+  if (!date) return '—'
+  try {
+    return formatDate(date)
+  } catch {
+    return '—'
+  }
+}
+
 export default function GoalsClient({ initialGoals, members, currentUser }: {
   initialGoals: any[]
   members: any[]
@@ -127,7 +137,7 @@ export default function GoalsClient({ initialGoals, members, currentUser }: {
                         <span className="text-xs text-slate-600">·</span>
                         <span className="text-xs text-slate-500 capitalize">{goal.period}</span>
                         <span className="text-xs text-slate-600">·</span>
-                        <span className="text-xs text-slate-500">Due {formatDate(goal.due_date)}</span>
+                        <span className="text-xs text-slate-500">Due {safeFormatDate(goal.due_date)}</span>
                       </div>
                     </div>
                   </div>
