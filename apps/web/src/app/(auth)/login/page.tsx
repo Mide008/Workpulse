@@ -1,5 +1,9 @@
 import { Suspense } from 'react'
-import LoginForm from './login-form'
+import dynamic from 'next/dynamic'
+
+const LoginForm = dynamic(() => import('./login-form'), {
+  ssr: true,
+})
 
 export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Sign in — WorkPulse' }
