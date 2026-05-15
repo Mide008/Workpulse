@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic'
 import { WorkPulseLogo } from '@/components/ui/logo'
 
 const steps = [

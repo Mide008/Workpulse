@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { Suspense } from 'react'
-import LoginClient from './login-client'
+import LoginForm from './login-form'
 
 export const metadata = { title: 'Sign in — WorkPulse' }
 
@@ -12,7 +12,7 @@ export default function LoginPage() {
         <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
       </div>
     }>
-      <LoginClient />
+      <LoginForm />
     </Suspense>
   )
 }
