@@ -50,7 +50,8 @@ export default function MarketingNav() {
             className="px-4 py-2 text-sm text-slate-400 hover:text-white transition">
             Sign in
           </Link>
-          <Link href="/onboarding/workspace"
+          {/* 🔧 Changed href to /signup */}
+          <Link href="/signup"
             className="px-5 py-2.5 text-sm font-semibold text-white bg-indigo-600
               hover:bg-indigo-500 rounded-xl transition-all shadow-lg shadow-indigo-500/20
               hover:shadow-indigo-500/30">
@@ -91,7 +92,8 @@ export default function MarketingNav() {
                     hover:bg-white/5 rounded-xl transition text-center">
                   Sign in
                 </Link>
-                <Link href="/onboarding/workspace" onClick={() => setMobileOpen(false)}
+                {/* 🔧 Changed href to /signup */}
+                <Link href="/signup" onClick={() => setMobileOpen(false)}
                   className="px-4 py-3 text-sm font-semibold text-white text-center
                     bg-indigo-600 hover:bg-indigo-500 rounded-xl transition">
                   Get started free

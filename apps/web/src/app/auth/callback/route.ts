@@ -1,4 +1,6 @@
-import { createServerSupabaseClient, createAdminClient } from '@/lib/supabase/server'
+export const dynamic = 'force-dynamic'
+
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
@@ -15,20 +17,19 @@ export async function GET(request: NextRequest) {
       const { data: { user } } = await supabase.auth.getUser()
 
       if (user) {
-        // Check if profile exists
         const { data: profile } = await supabase
           .from('users')
           .select('id, workspace_id')
           .eq('id', user.id)
           .maybeSingle()
 
+        // No profile → first‑time user → onboarding
         if (!profile) {
-          // No profile — go to onboarding
           return NextResponse.redirect(`${origin}/onboarding/workspace`)
         }
 
-        const workspaceId = (profile as { id: string; workspace_id: string } | null)?.workspace_id
-        if (!workspaceId) {
+        // Has profile but no workspace yet
+        if (!(profile as any).workspace_id) {
           return NextResponse.redirect(`${origin}/onboarding/workspace`)
         }
       }
