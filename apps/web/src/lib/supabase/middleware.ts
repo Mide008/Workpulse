@@ -9,9 +9,7 @@ export async function updateSession(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
+        getAll() { return request.cookies.getAll() },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           supabaseResponse = NextResponse.next({ request })
@@ -24,38 +22,48 @@ export async function updateSession(request: NextRequest) {
   )
 
   const { data: { user } } = await supabase.auth.getUser()
-
   const { pathname } = request.nextUrl
 
-  const publicRoutes = [
+  // These routes are always public — no auth required
+  const alwaysPublic = [
     '/',
-    '/pricing',
-    '/sectors',
-    '/about',
     '/login',
     '/signup',
     '/forgot-password',
     '/reset-password',
     '/auth/callback',
     '/invite',
+    '/pricing',
+    '/sectors',
+    '/about',
+    '/careers',
+    '/contact',
+    '/privacy',
+    '/terms',
+    '/security',
+    '/cookies',
   ]
 
-  const isPublicRoute =
-    publicRoutes.includes(pathname) ||
-    pathname.startsWith('/blog') ||
+  const isAlwaysPublic =
+    alwaysPublic.includes(pathname) ||
+    pathname.startsWith('/onboarding') ||  // onboarding is client-side auth checked
     pathname.startsWith('/_next') ||
-    pathname.startsWith('/api/') === false && pathname.includes('.')
+    pathname.startsWith('/api/') ||
+    pathname.includes('.')
 
-  if (!user && !isPublicRoute && pathname.startsWith('/dashboard') ||
-      !user && !isPublicRoute && pathname.startsWith('/tasks') ||
-      !user && !isPublicRoute && pathname.startsWith('/projects') ||
-      !user && !isPublicRoute && pathname.startsWith('/analytics') ||
-      !user && !isPublicRoute && pathname.startsWith('/team') ||
-      !user && !isPublicRoute && pathname.startsWith('/chat') ||
-      !user && !isPublicRoute && pathname.startsWith('/goals') ||
-      !user && !isPublicRoute && pathname.startsWith('/notifications') ||
-      !user && !isPublicRoute && pathname.startsWith('/settings') ||
-      !user && !isPublicRoute && pathname.startsWith('/onboarding')) {
+  // Only protect app routes
+  const isAppRoute =
+    pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/tasks') ||
+    pathname.startsWith('/projects') ||
+    pathname.startsWith('/analytics') ||
+    pathname.startsWith('/team') ||
+    pathname.startsWith('/chat') ||
+    pathname.startsWith('/goals') ||
+    pathname.startsWith('/notifications') ||
+    pathname.startsWith('/settings')
+
+  if (!user && isAppRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     url.searchParams.set('redirect', pathname)
