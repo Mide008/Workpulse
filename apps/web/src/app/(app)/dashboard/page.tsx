@@ -1,42 +1,36 @@
-import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { getCurrentUser } from '@/lib/actions/auth'
 import { redirect } from 'next/navigation'
-import DashboardClient from './dashboard-client'
 
 export const dynamic = 'force-dynamic'
+
 export const metadata = { title: 'Dashboard' }
 
 export default async function DashboardPage() {
   const user = await getCurrentUser()
   if (!user) redirect('/login')
 
-  const supabase = await createServerSupabaseClient()
-
-  const { data: tasks } = await supabase
-    .from('tasks')
-    .select('id, title, status, priority, due_date, progress, assigned_to')
-    .eq('workspace_id', user.workspaceId)
-    .order('created_at', { ascending: false })
-    .limit(50)
-
-  const { data: projects } = await supabase
-    .from('projects')
-    .select('id, name, status, priority, progress, end_date, color')
-    .eq('workspace_id', user.workspaceId)
-    .order('updated_at', { ascending: false })
-    .limit(10)
-
   return (
-    <DashboardClient
-      user={{
-        id: user.id,
-        fullName: user.fullName,
-        workspaceName: user.workspaceName,
-        roleLevel: user.roleLevel,
-        primaryColor: user.primaryColor,
-      }}
-      tasks={(tasks as any[]) ?? []}
-      projects={(projects as any[]) ?? []}
-    />
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-white">
+          Welcome back, {user.fullName?.split(' ')[0]}
+        </h1>
+        <p className="text-slate-400 text-sm mt-1">
+          Workspace: {user.workspaceName}
+        </p>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {['Active Tasks', 'Completed', 'Projects', 'Team Members'].map(label => (
+          <div
+            key={label}
+            className="bg-slate-900 border border-white/5 rounded-2xl p-4"
+          >
+            <p className="text-slate-400 text-sm">{label}</p>
+            <p className="text-2xl font-bold text-white mt-2">—</p>
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }
