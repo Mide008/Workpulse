@@ -15,8 +15,8 @@ const NAV = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/tasks', label: 'My Tasks', icon: CheckSquare },
   { href: '/projects', label: 'Projects', icon: FolderKanban },
-  { href: '/team', label: 'Team', icon: Users, minLevel: 3 },
-  { href: '/analytics', label: 'Analytics', icon: BarChart3, minLevel: 3 },
+  { href: '/analytics', label: 'Analytics', icon: BarChart3, minLevel: 2 },
+  { href: '/team', label: 'Team', icon: Users, minLevel: 2 },
   { href: '/goals', label: 'Goals', icon: Target },
   { href: '/chat', label: 'Chat', icon: MessageSquare },
 ]
