@@ -11,6 +11,7 @@ import {
 import { cn, formatDate } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
+import { staggerItem, staggerContainer } from '@/lib/motion'   // ✅ imported
 
 function getGreeting() {
   const h = new Date().getHours()
@@ -32,11 +33,6 @@ const statusColor: Record<string, string> = {
 const statusLabel: Record<string, string> = {
   not_started: 'Not Started', in_progress: 'In Progress',
   blocked: 'Blocked', review: 'In Review', done: 'Done',
-}
-
-const stagger = {
-  container: { animate: { transition: { staggerChildren: 0.06 } } },
-  item: { initial: { opacity: 0, y: 16 }, animate: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.23, 1, 0.32, 1] } } },
 }
 
 export default function DashboardClient({ user }: { user: any }) {
@@ -144,7 +140,7 @@ export default function DashboardClient({ user }: { user: any }) {
         </div>
       ) : (
         <motion.div
-          variants={stagger.container}
+          variants={staggerContainer}
           initial="initial"
           animate="animate"
           className="grid grid-cols-2 lg:grid-cols-4 gap-4"
@@ -155,7 +151,7 @@ export default function DashboardClient({ user }: { user: any }) {
             { label: 'Blocked', value: stats.blocked, icon: AlertTriangle, color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20', sub: stats.blocked > 0 ? 'Needs attention' : 'All clear' },
             { label: 'Completed', value: stats.done, icon: TrendingUp, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', sub: stats.overdue > 0 ? `${stats.overdue} overdue` : 'On track' },
           ].map(stat => (
-            <motion.div key={stat.label} variants={stagger.item}>
+            <motion.div key={stat.label} variants={staggerItem}>
               <div className={cn(
                 'p-5 rounded-2xl border bg-slate-900/80 hover:bg-slate-900',
                 'transition-all duration-300 hover:-translate-y-0.5',

@@ -15,6 +15,16 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { staggerItem } from '@/lib/motion'
 
+// ---------- dnd‑kit imports ----------
+import {
+  DndContext, DragEndEvent, DragOverlay, DragStartEvent,
+  PointerSensor, useSensor, useSensors, closestCorners,
+} from '@dnd-kit/core'
+import {
+  SortableContext, useSortable, verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+
 type ViewMode = 'list' | 'board'
 type SortKey = 'created_at' | 'due_date' | 'priority' | 'status'
 
@@ -54,13 +64,55 @@ interface Task {
   project: { id: string; name: string; color: string } | null
 }
 
+// ---------- Draggable card used in board view ----------
+function DraggableTaskCard({ task }: { task: Task }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: task.id })
+  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <Link href={`/tasks/${task.id}`}>
+        <div className={cn(
+          'p-4 rounded-xl cursor-pointer group mb-2',
+          'bg-slate-900/80 border border-white/[0.06]',
+          'hover:border-indigo-500/30 hover:shadow-lg transition-all duration-200',
+          task.status === 'blocked' && 'border-red-500/20',
+          isDragging && 'shadow-2xl shadow-black/50'
+        )}>
+          <p className={cn('text-sm font-medium leading-snug mb-2',
+            task.status === 'done' ? 'text-slate-500 line-through' : 'text-slate-200')}>
+            {task.title}
+          </p>
+          {task.blocker_reason && (
+            <div className="flex items-center gap-1.5 mb-2 text-xs text-red-400 bg-red-500/10 px-2 py-1.5 rounded-lg">
+              <AlertTriangle className="w-3 h-3 shrink-0" />
+              <span className="truncate">{task.blocker_reason}</span>
+            </div>
+          )}
+          <div className="flex items-center justify-between">
+            <div className={cn('w-2 h-2 rounded-full', priorityConfig[task.priority]?.dot ?? 'bg-slate-400')} />
+            {task.due_date && (
+              <span className={cn('text-xs',
+                new Date(task.due_date) < new Date() && task.status !== 'done' ? 'text-red-400' : 'text-slate-600')}>
+                {formatDate(task.due_date)}
+              </span>
+            )}
+          </div>
+        </div>
+      </Link>
+    </div>
+  )
+}
+
+// ---------- Main component ----------
 export default function TasksClient({ initialTasks, projects, members, currentUser }: {
   initialTasks: Task[]
   projects: any[]
   members: any[]
   currentUser: any
 }) {
-  const [tasks] = useState<Task[]>(initialTasks)
+  // Local state so we can optimistically update on drag
+  const [tasks, setTasks] = useState<Task[]>(initialTasks)
   const [view, setView] = useState<ViewMode>('list')
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
@@ -68,6 +120,33 @@ export default function TasksClient({ initialTasks, projects, members, currentUs
   const [sortBy, setSortBy] = useState<SortKey>('created_at')
   const [showFilters, setShowFilters] = useState(false)
 
+  // ---------- dnd‑kit sensors ----------
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
+  const [activeTask, setActiveTask] = useState<Task | null>(null)
+
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    setActiveTask(null)
+    if (!over || active.id === over.id) return
+
+    const newStatus = over.id as string
+    if (!['not_started', 'in_progress', 'review', 'blocked', 'done'].includes(newStatus)) return
+
+    const task = tasks.find(t => t.id === active.id)
+    if (!task || task.status === newStatus) return
+
+    // Optimistic UI update
+    setTasks(prev => prev.map(t => t.id === active.id ? { ...t, status: newStatus } : t))
+
+    // Persist to server
+    await fetch(`/api/tasks/${active.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus }),
+    })
+  }
+
+  // ---------- Filtering & sorting ----------
   const filtered = useMemo(() => {
     let result = tasks.filter(t => {
       const matchSearch = !search || t.title.toLowerCase().includes(search.toLowerCase())
@@ -244,7 +323,7 @@ export default function TasksClient({ initialTasks, projects, members, currentUs
           </motion.div>
         ) : (
           <motion.div key="board" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <TaskBoardView tasks={filtered} />
+            <TaskBoardView tasks={filtered} sensors={sensors} onDragEnd={handleDragEnd} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -252,6 +331,7 @@ export default function TasksClient({ initialTasks, projects, members, currentUs
   )
 }
 
+// ---------- List view (unchanged) ----------
 function TaskListView({ tasks }: { tasks: Task[] }) {
   if (tasks.length === 0) {
     return (
@@ -367,99 +447,45 @@ function TaskListRow({ task }: { task: Task }) {
   )
 }
 
-function TaskBoardView({ tasks }: { tasks: Task[] }) {
+// ---------- Board view with drag-and-drop ----------
+function TaskBoardView({ tasks, sensors, onDragEnd }: {
+  tasks: Task[]
+  sensors: any
+  onDragEnd: (event: DragEndEvent) => void
+}) {
   const columns = Object.entries(statusConfig).map(([key, val]) => ({ key, ...val }))
 
   return (
-    <div className="flex gap-4 overflow-x-auto pb-4">
-      {columns.map(col => {
-        const colTasks = tasks.filter(t => t.status === col.key)
-        const ColIcon = col.icon
-        return (
-          <div key={col.key} className="flex-shrink-0 w-72">
-            <div className="flex items-center gap-2 mb-3 px-1">
-              <ColIcon className={cn('w-4 h-4', col.color)} />
-              <span className="text-sm font-medium text-slate-300">{col.label}</span>
-              <span className="ml-auto text-xs text-slate-500 bg-white/5 px-2 py-0.5 rounded-full">
-                {colTasks.length}
-              </span>
-            </div>
-            <div className="space-y-2">
-              {colTasks.map((task, i) => (
-                <motion.div key={task.id} variants={staggerItem} initial="initial" animate="animate"
-                  style={{ animationDelay: `${i * 50}ms` }}>
-                  <Link href={`/tasks/${task.id}`}><TaskCard task={task} /></Link>
-                </motion.div>
-              ))}
-              {colTasks.length === 0 && (
-                <div className="h-24 rounded-xl border border-dashed border-white/10 flex items-center justify-center">
-                  <p className="text-xs text-slate-600">No tasks</p>
+    <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={onDragEnd}>
+      <div className="flex gap-4 overflow-x-auto pb-4">
+        {columns.map(col => {
+          const colTasks = tasks.filter(t => t.status === col.key)
+          const ColIcon = col.icon
+          return (
+            <div key={col.key} className="flex-shrink-0 w-72">
+              <div className="flex items-center gap-2 mb-3 px-1">
+                <ColIcon className={cn('w-4 h-4', col.color)} />
+                <span className="text-sm font-medium text-slate-300">{col.label}</span>
+                <span className="ml-auto text-xs text-slate-500 bg-white/5 px-2 py-0.5 rounded-full">
+                  {colTasks.length}
+                </span>
+              </div>
+              <SortableContext items={colTasks.map(t => t.id)} strategy={verticalListSortingStrategy}>
+                <div className="space-y-2">
+                  {colTasks.map((task, i) => (
+                    <DraggableTaskCard key={task.id} task={task} />
+                  ))}
+                  {colTasks.length === 0 && (
+                    <div className="h-24 rounded-xl border border-dashed border-white/10 flex items-center justify-center">
+                      <p className="text-xs text-slate-600">No tasks</p>
+                    </div>
+                  )}
                 </div>
-              )}
+              </SortableContext>
             </div>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
-function TaskCard({ task }: { task: Task }) {
-  const priority = priorityConfig[task.priority]
-  const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== 'done'
-
-  return (
-    <div className={cn(
-      'group p-4 rounded-xl cursor-pointer',
-      'bg-slate-900/80 border border-white/[0.06]',
-      'hover:border-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/5 transition-all duration-200',
-      task.status === 'blocked' && 'border-red-500/20'
-    )}>
-      <div className="flex items-start justify-between gap-2 mb-3">
-        <p className={cn('text-sm font-medium leading-snug',
-          task.status === 'done' ? 'text-slate-500 line-through' : 'text-slate-200')}>
-          {task.title}
-        </p>
-        <div className={cn('w-2 h-2 rounded-full shrink-0 mt-1', priority?.dot ?? 'bg-slate-400')} />
+          )
+        })}
       </div>
-
-      {task.blocker_reason && (
-        <div className="flex items-center gap-1.5 mb-2 text-xs text-red-400 bg-red-500/10 px-2 py-1.5 rounded-lg">
-          <AlertTriangle className="w-3 h-3 shrink-0" />
-          <span className="truncate">{task.blocker_reason}</span>
-        </div>
-      )}
-
-      {task.progress > 0 && task.status !== 'done' && (
-        <div className="mb-3">
-          <div className="w-full bg-slate-800 rounded-full h-1">
-            <div className="h-1 rounded-full bg-indigo-500 transition-all" style={{ width: `${task.progress}%` }} />
-          </div>
-        </div>
-      )}
-
-      <div className="flex items-center justify-between mt-2">
-        {task.project && (
-          <span className="text-xs text-slate-500 flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: task.project.color }} />
-            {task.project.name}
-          </span>
-        )}
-        <div className="flex items-center gap-2 ml-auto">
-          {task.due_date && (
-            <span className={cn('text-xs', isOverdue ? 'text-red-400' : 'text-slate-600')}>
-              {formatDate(task.due_date)}
-            </span>
-          )}
-          {task.assignee && (
-            <Avatar size="xs">
-              {task.assignee.avatar_url
-                ? <AvatarImage src={task.assignee.avatar_url} alt={task.assignee.full_name} />
-                : <AvatarFallback>{getInitials(task.assignee.full_name)}</AvatarFallback>}
-            </Avatar>
-          )}
-        </div>
-      </div>
-    </div>
+    </DndContext>
   )
 }
