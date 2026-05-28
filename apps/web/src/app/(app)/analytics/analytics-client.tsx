@@ -399,12 +399,12 @@ export default function AnalyticsClient({ tasks, members, blockedTasks, currentU
           </div>
         </div>
 
-        {/* AI Performance Summary */}
+        {/* Performance Insights (formerly AI Performance Summary) */}
         <div className="bg-slate-900/80 border border-white/[0.06] rounded-2xl p-6">
           <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
             <h3 className="font-semibold text-white flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-indigo-400" />
-              AI Performance Summary
+              Performance Insights
             </h3>
             <div className="flex items-center gap-3">
               {members && members.length > 0 && currentUser?.roleLevel <= 2 && (
@@ -414,20 +414,23 @@ export default function AnalyticsClient({ tasks, members, blockedTasks, currentU
                   className="bg-slate-800 border border-white/10 rounded-xl px-3 py-2 text-sm
                     text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
                 >
-                  <option value="">My summary</option>
+                  <option value="">My report</option>
                   {members.map(m => <option key={m.id} value={m.id}>{m.full_name}</option>)}
                 </select>
               )}
               <Button variant="primary" size="sm" loading={aiLoading}
                 icon={<Sparkles className="w-3.5 h-3.5" />}
                 onClick={fetchAISummary}>
-                {aiLoading ? 'Generating...' : 'Generate'}
+                {aiLoading ? 'Analysing...' : 'Generate Insights'}
               </Button>
             </div>
           </div>
 
           {aiSummary ? (
             <div className="bg-indigo-500/5 border border-indigo-500/20 rounded-xl p-5">
+              <p className="text-xs text-slate-500 font-medium mb-3 uppercase tracking-wider">
+                Performance Report · {period.charAt(0).toUpperCase() + period.slice(1)}
+              </p>
               <div className="flex items-start gap-3">
                 <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center shrink-0 mt-0.5">
                   <Sparkles className="w-4 h-4 text-indigo-400" />
@@ -438,8 +441,8 @@ export default function AnalyticsClient({ tasks, members, blockedTasks, currentU
           ) : (
             <div className="text-center py-10 border border-dashed border-white/[0.06] rounded-xl">
               <Sparkles className="w-8 h-8 text-slate-700 mx-auto mb-2" />
-              <p className="text-slate-500 text-sm">Click Generate to get an AI-powered performance narrative</p>
-              <p className="text-slate-600 text-xs mt-1">Powered by Groq Llama 3 / Gemini 1.5</p>
+              <p className="text-slate-500 text-sm">Click Generate Insights to receive a data-driven performance narrative</p>
+              <p className="text-slate-600 text-xs mt-1">Based on your actual task activity, completion rates, and delivery patterns</p>
             </div>
           )}
         </div>
