@@ -11,7 +11,6 @@ import {
 import { cn, formatDate } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
-import { staggerItem, staggerContainer } from '@/lib/motion'   // ✅ imported
 
 function getGreeting() {
   const h = new Date().getHours()
@@ -35,20 +34,39 @@ const statusLabel: Record<string, string> = {
   blocked: 'Blocked', review: 'In Review', done: 'Done',
 }
 
+const stagger = {
+  container: { animate: { transition: { staggerChildren: 0.06 } } },
+  item: { 
+    initial: { opacity: 0, y: 16 }, 
+    animate: { 
+      opacity: 1, 
+      y: 0, 
+      transition: { duration: 0.4, ease: 'easeOut' as const } 
+    } 
+  },
+}
+
 export default function DashboardClient({ user }: { user: any }) {
   const [tasks, setTasks] = useState<any[]>([])
   const [projects, setProjects] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   const fetchData = useCallback(async () => {
-    const [tr, pr] = await Promise.allSettled([fetch('/api/tasks'), fetch('/api/projects')])
-    if (tr.status === 'fulfilled' && tr.value.ok) {
-      const { tasks: t } = await tr.value.json(); setTasks(t ?? [])
+    try {
+      const [tr, pr] = await Promise.allSettled([fetch('/api/tasks'), fetch('/api/projects')])
+      if (tr.status === 'fulfilled' && tr.value.ok) {
+        const { tasks: t } = await tr.value.json()
+        setTasks(t ?? [])
+      }
+      if (pr.status === 'fulfilled' && pr.value.ok) {
+        const { projects: p } = await pr.value.json()
+        setProjects(p ?? [])
+      }
+    } catch (error) {
+      console.error('Failed fetching data stream:', error)
+    } finally {
+      setLoading(false)
     }
-    if (pr.status === 'fulfilled' && pr.value.ok) {
-      const { projects: p } = await pr.value.json(); setProjects(p ?? [])
-    }
-    setLoading(false)
   }, [])
 
   useEffect(() => { fetchData() }, [fetchData])
@@ -64,7 +82,7 @@ export default function DashboardClient({ user }: { user: any }) {
   const completionRate = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0
   const activeTasks = tasks.filter(t => t.status !== 'done').slice(0, 5)
   const activeProjects = projects.filter(p => p.status === 'active').slice(0, 4)
-  const isManager = user.roleLevel <= 2
+  const isManager = user?.roleLevel <= 2
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 animate-fade-in">
@@ -72,10 +90,10 @@ export default function DashboardClient({ user }: { user: any }) {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <p className="text-slate-400 text-sm font-medium">{getGreeting()}</p>
-          <h1 className="text-3xl font-bold text-white mt-0.5 tracking-tight">{user.fullName}</h1>
+          <h1 className="text-3xl font-bold text-white mt-0.5 tracking-tight">{user?.fullName}</h1>
           <div className="flex items-center gap-2 mt-1.5">
             <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <p className="text-slate-500 text-sm">{user.workspaceName} · {user.roleName}</p>
+            <p className="text-slate-500 text-sm">{user?.workspaceName} · {user?.roleName}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -140,7 +158,7 @@ export default function DashboardClient({ user }: { user: any }) {
         </div>
       ) : (
         <motion.div
-          variants={staggerContainer}
+          variants={stagger.container}
           initial="initial"
           animate="animate"
           className="grid grid-cols-2 lg:grid-cols-4 gap-4"
@@ -151,7 +169,7 @@ export default function DashboardClient({ user }: { user: any }) {
             { label: 'Blocked', value: stats.blocked, icon: AlertTriangle, color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20', sub: stats.blocked > 0 ? 'Needs attention' : 'All clear' },
             { label: 'Completed', value: stats.done, icon: TrendingUp, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', sub: stats.overdue > 0 ? `${stats.overdue} overdue` : 'On track' },
           ].map(stat => (
-            <motion.div key={stat.label} variants={staggerItem}>
+            <motion.div key={stat.label} variants={stagger.item}>
               <div className={cn(
                 'p-5 rounded-2xl border bg-slate-900/80 hover:bg-slate-900',
                 'transition-all duration-300 hover:-translate-y-0.5',
