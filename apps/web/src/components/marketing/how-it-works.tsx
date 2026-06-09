@@ -54,13 +54,13 @@ export default function HowItWorksSection() {
             transition={{ duration: 0.5 }}
           >
             <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full
-              bg-white/5 border border-white/10 text-slate-400 text-sm font-medium mb-4">
+              bg-white/5 border border-[var(--border)]10 text-[var(--text-secondary)] text-sm font-medium mb-4">
               Simple by design
             </span>
-            <h2 className="text-4xl md:text-5xl font-bold text-white tracking-tight mb-4">
+            <h2 className="text-4xl md:text-5xl font-bold text-[var(--text-primary)] tracking-tight mb-4">
               How WorkPulse works
             </h2>
-            <p className="text-slate-400 text-lg max-w-xl mx-auto">
+            <p className="text-[var(--text-secondary)] text-lg max-w-xl mx-auto">
               Four steps. Minimal clicks. Maximum visibility.
             </p>
           </motion.div>
@@ -83,14 +83,14 @@ export default function HowItWorksSection() {
               <div className={`w-16 h-16 rounded-2xl border ${step.border} ${step.bg}
                 flex items-center justify-center mx-auto mb-5 relative`}>
                 <step.icon className={`w-7 h-7 ${step.color}`} />
-                <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-slate-950
-                  border border-white/10 flex items-center justify-center
-                  text-[10px] font-bold text-slate-500">
+                <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-[var(--bg-surface)]
+                  border border-[var(--border)]10 flex items-center justify-center
+                  text-[10px] font-bold text-[var(--text-muted)]">
                   {step.number}
                 </div>
               </div>
-              <h3 className="text-white font-semibold mb-2 text-lg">{step.title}</h3>
-              <p className="text-slate-500 text-sm leading-relaxed">{step.description}</p>
+              <h3 className="text-[var(--text-primary)] font-semibold mb-2 text-lg">{step.title}</h3>
+              <p className="text-[var(--text-muted)] text-sm leading-relaxed">{step.description}</p>
             </motion.div>
           ))}
         </div>

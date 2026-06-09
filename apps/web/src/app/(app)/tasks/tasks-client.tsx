@@ -1,3 +1,4 @@
+// apps/web/src/app/(app)/tasks/tasks-client.tsx
 'use client'
 
 import { useState, useMemo } from 'react'
@@ -14,6 +15,7 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { staggerItem } from '@/lib/motion'
+import { ToggleButton } from '@/components/ui/toggle-button'
 
 // ---------- dnd‑kit imports ----------
 import {
@@ -39,7 +41,7 @@ const priorityConfig: Record<string, { label: string; dot: string; badge: 'defau
 }
 
 const statusConfig: Record<string, { label: string; color: string; icon: any; badge: 'default' | 'info' | 'danger' | 'purple' | 'success' }> = {
-  not_started: { label: 'Not Started', color: 'text-slate-400',   icon: Circle,        badge: 'default' },
+  not_started: { label: 'Not Started', color: 'text-[var(--text-secondary)]',   icon: Circle,        badge: 'default' },
   in_progress:  { label: 'In Progress', color: 'text-blue-400',   icon: Clock,         badge: 'info'    },
   blocked:      { label: 'Blocked',     color: 'text-red-400',    icon: AlertTriangle, badge: 'danger'  },
   review:       { label: 'In Review',   color: 'text-purple-400', icon: Clock,         badge: 'purple'  },
@@ -74,13 +76,13 @@ function DraggableTaskCard({ task }: { task: Task }) {
       <Link href={`/tasks/${task.id}`}>
         <div className={cn(
           'p-4 rounded-xl cursor-pointer group mb-2',
-          'bg-slate-900/80 border border-white/[0.06]',
+          'bg-[var(--bg-surface)]/80 border border-[var(--border)][0.06]',
           'hover:border-indigo-500/30 hover:shadow-lg transition-all duration-200',
           task.status === 'blocked' && 'border-red-500/20',
           isDragging && 'shadow-2xl shadow-black/50'
         )}>
           <p className={cn('text-sm font-medium leading-snug mb-2',
-            task.status === 'done' ? 'text-slate-500 line-through' : 'text-slate-200')}>
+            task.status === 'done' ? 'text-[var(--text-muted)] line-through' : 'text-slate-200')}>
             {task.title}
           </p>
           {task.blocker_reason && (
@@ -181,8 +183,8 @@ export default function TasksClient({ initialTasks, projects, members, currentUs
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Tasks</h1>
-          <p className="text-slate-400 text-sm mt-0.5">
+          <h1 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">Tasks</h1>
+          <p className="text-[var(--text-secondary)] text-sm mt-0.5">
             {stats.done}/{stats.total} complete
             {stats.blocked > 0 && <span className="text-red-400 ml-2">· {stats.blocked} blocked</span>}
             {stats.overdue > 0 && <span className="text-amber-400 ml-2">· {stats.overdue} overdue</span>}
@@ -196,34 +198,34 @@ export default function TasksClient({ initialTasks, projects, members, currentUs
       {/* Toolbar */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-48">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] pointer-events-none" />
           <input
             type="text"
             placeholder="Search tasks..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full bg-white/[0.04] border border-white/10 rounded-xl pl-10 pr-4 py-2.5
-              text-sm text-white placeholder:text-slate-500 focus:outline-none
+            className="w-full bg-white/[0.04] border border-[var(--border)]10 rounded-xl pl-10 pr-4 py-2.5
+              text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none
               focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50
-              hover:border-white/20 transition-all"
+              hover:border-[var(--border)]20 transition-all"
           />
           {search && (
             <button onClick={() => setSearch('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition">
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition">
               <X className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
 
         <Button
-          variant={showFilters ? 'secondary' : 'outline'}
+          variant={showFilters ? 'secondary' : 'ghost'}  // CHANGED: 'outline' -> 'ghost'
           size="md"
           onClick={() => setShowFilters(!showFilters)}
           icon={<SlidersHorizontal className="w-4 h-4" />}
         >
           Filters
           {activeFilters > 0 && (
-            <span className="ml-1 w-5 h-5 rounded-full bg-indigo-500 text-white text-xs
+            <span className="ml-1 w-5 h-5 rounded-full bg-indigo-500 text-[var(--text-primary)] text-xs
               flex items-center justify-center font-bold">{activeFilters}</span>
           )}
         </Button>
@@ -232,25 +234,26 @@ export default function TasksClient({ initialTasks, projects, members, currentUs
           <select
             value={sortBy}
             onChange={e => setSortBy(e.target.value as SortKey)}
-            className="appearance-none bg-white/[0.04] border border-white/10 rounded-xl
+            className="appearance-none bg-white/[0.04] border border-[var(--border)]10 rounded-xl
               pl-3 pr-8 py-2.5 text-sm text-slate-300 focus:outline-none
-              focus:ring-2 focus:ring-indigo-500/50 hover:border-white/20 transition-all cursor-pointer"
+              focus:ring-2 focus:ring-indigo-500/50 hover:border-[var(--border)]20 transition-all cursor-pointer"
           >
             <option value="created_at">Newest first</option>
             <option value="due_date">Due date</option>
             <option value="priority">Priority</option>
             <option value="status">Status</option>
           </select>
-          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none" />
+          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)] pointer-events-none" />
         </div>
 
-        <div className="flex items-center bg-white/[0.04] border border-white/10 rounded-xl p-1">
+        <div className="flex items-center bg-white/[0.04] border border-[var(--border)]10 rounded-xl p-1">
           <Tooltip>
             <TooltipTrigger asChild>
               <button
                 onClick={() => setView('list')}
                 className={cn('p-2 rounded-lg transition-all',
-                  view === 'list' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-white/5')}
+                  view === 'list' ? 'text-white shadow-sm' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-white/5')}
+                style={view === 'list' ? { background: 'var(--primary)' } : undefined}
               ><List className="w-4 h-4" /></button>
             </TooltipTrigger>
             <TooltipContent>List view</TooltipContent>
@@ -260,7 +263,8 @@ export default function TasksClient({ initialTasks, projects, members, currentUs
               <button
                 onClick={() => setView('board')}
                 className={cn('p-2 rounded-lg transition-all',
-                  view === 'board' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-white hover:bg-white/5')}
+                  view === 'board' ? 'text-white shadow-sm' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-white/5')}
+                style={view === 'board' ? { background: 'var(--primary)' } : undefined}
               ><LayoutGrid className="w-4 h-4" /></button>
             </TooltipTrigger>
             <TooltipContent>Board view</TooltipContent>
@@ -278,35 +282,39 @@ export default function TasksClient({ initialTasks, projects, members, currentUs
             transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
             className="overflow-hidden"
           >
-            <div className="flex items-center gap-4 flex-wrap p-4 bg-white/[0.02] border border-white/[0.06] rounded-2xl">
+            <div className="flex items-center gap-4 flex-wrap p-4 bg-white/[0.02] border border-[var(--border)][0.06] rounded-2xl">
               <div>
-                <label className="text-xs text-slate-500 block mb-1.5 font-medium">Status</label>
+                <label className="text-xs text-[var(--text-muted)] block mb-1.5 font-medium">Status</label>
                 <div className="flex items-center gap-1.5 flex-wrap">
                   {['all', ...Object.keys(statusConfig)].map(s => (
-                    <button key={s} onClick={() => setFilterStatus(s)}
-                      className={cn('px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
-                        filterStatus === s ? 'bg-indigo-600 text-white' : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10')}>
+                    <ToggleButton
+                      key={s}
+                      active={filterStatus === s}
+                      onClick={() => setFilterStatus(s)}
+                    >
                       {s === 'all' ? 'All' : statusConfig[s]?.label}
-                    </button>
+                    </ToggleButton>
                   ))}
                 </div>
               </div>
               <div className="w-px h-8 bg-white/10" />
               <div>
-                <label className="text-xs text-slate-500 block mb-1.5 font-medium">Priority</label>
+                <label className="text-xs text-[var(--text-muted)] block mb-1.5 font-medium">Priority</label>
                 <div className="flex items-center gap-1.5">
                   {['all', ...Object.keys(priorityConfig)].map(p => (
-                    <button key={p} onClick={() => setFilterPriority(p)}
-                      className={cn('px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
-                        filterPriority === p ? 'bg-indigo-600 text-white' : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10')}>
+                    <ToggleButton
+                      key={p}
+                      active={filterPriority === p}
+                      onClick={() => setFilterPriority(p)}
+                    >
                       {p === 'all' ? 'All' : priorityConfig[p]?.label}
-                    </button>
+                    </ToggleButton>
                   ))}
                 </div>
               </div>
               {activeFilters > 0 && (
                 <button onClick={() => { setFilterStatus('all'); setFilterPriority('all') }}
-                  className="ml-auto text-xs text-slate-500 hover:text-red-400 transition flex items-center gap-1">
+                  className="ml-auto text-xs text-[var(--text-muted)] hover:text-red-400 transition flex items-center gap-1">
                   <X className="w-3 h-3" /> Clear
                 </button>
               )}
@@ -331,16 +339,16 @@ export default function TasksClient({ initialTasks, projects, members, currentUs
   )
 }
 
-// ---------- List view (unchanged) ----------
+// ---------- List view ----------
 function TaskListView({ tasks }: { tasks: Task[] }) {
   if (tasks.length === 0) {
     return (
       <div className="text-center py-24 animate-fade-in">
-        <div className="w-16 h-16 rounded-2xl bg-white/[0.04] border border-white/[0.06]
+        <div className="w-16 h-16 rounded-2xl bg-white/[0.04] border border-[var(--border)][0.06]
           flex items-center justify-center mx-auto mb-4">
           <CheckCircle2 className="w-7 h-7 text-slate-600" />
         </div>
-        <p className="text-slate-400 font-medium">No tasks found</p>
+        <p className="text-[var(--text-secondary)] font-medium">No tasks found</p>
         <p className="text-slate-600 text-sm mt-1">Try adjusting your filters or create a new task</p>
         <Link href="/tasks/new">
           <Button variant="secondary" size="sm" className="mt-4" icon={<Plus className="w-3.5 h-3.5" />}>
@@ -373,7 +381,7 @@ function TaskListRow({ task }: { task: Task }) {
     <div className={cn(
       'group flex items-center gap-4 px-4 py-3.5 rounded-xl',
       'bg-white/[0.02] border border-transparent',
-      'hover:bg-white/[0.05] hover:border-white/[0.08] transition-all duration-200 cursor-pointer',
+      'hover:bg-white/[0.05] hover:border-[var(--border)][0.08] transition-all duration-200 cursor-pointer',
       task.status === 'blocked' && 'border-red-500/10 bg-red-500/[0.02]'
     )}>
       <Tooltip>
@@ -385,19 +393,19 @@ function TaskListRow({ task }: { task: Task }) {
 
       <Tooltip>
         <TooltipTrigger>
-          <StatusIcon className={cn('w-4 h-4 shrink-0', status?.color ?? 'text-slate-400')} />
+          <StatusIcon className={cn('w-4 h-4 shrink-0', status?.color ?? 'text-[var(--text-secondary)]')} />
         </TooltipTrigger>
         <TooltipContent>{status?.label ?? task.status}</TooltipContent>
       </Tooltip>
 
       <div className="flex-1 min-w-0">
         <p className={cn('text-sm font-medium truncate transition-colors',
-          task.status === 'done' ? 'text-slate-500 line-through' : 'text-slate-200 group-hover:text-white')}>
+          task.status === 'done' ? 'text-[var(--text-muted)] line-through' : 'text-slate-200 group-hover:text-[var(--text-primary)]')}>
           {task.title}
         </p>
         <div className="flex items-center gap-2 mt-0.5">
           {task.project && (
-            <span className="text-xs text-slate-500 flex items-center gap-1">
+            <span className="text-xs text-[var(--text-muted)] flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: task.project.color }} />
               {task.project.name}
             </span>
@@ -412,10 +420,10 @@ function TaskListRow({ task }: { task: Task }) {
 
       {task.progress > 0 && task.status !== 'done' && (
         <div className="hidden sm:flex items-center gap-2 w-24 shrink-0">
-          <div className="flex-1 bg-slate-800 rounded-full h-1">
+          <div className="flex-1 bg-[var(--bg-elevated)] rounded-full h-1">
             <div className="h-1 rounded-full bg-indigo-500 transition-all" style={{ width: `${task.progress}%` }} />
           </div>
-          <span className="text-xs text-slate-500 w-7 text-right">{task.progress}%</span>
+          <span className="text-xs text-[var(--text-muted)] w-7 text-right">{task.progress}%</span>
         </div>
       )}
 
@@ -423,7 +431,7 @@ function TaskListRow({ task }: { task: Task }) {
         <Tooltip>
           <TooltipTrigger>
             <span className={cn('hidden md:block text-xs shrink-0 px-2 py-1 rounded-lg',
-              isOverdue ? 'text-red-400 bg-red-500/10' : 'text-slate-500 bg-white/[0.04]')}>
+              isOverdue ? 'text-red-400 bg-red-500/10' : 'text-[var(--text-muted)] bg-white/[0.04]')}>
               {formatDate(task.due_date)}
             </span>
           </TooltipTrigger>
@@ -466,7 +474,7 @@ function TaskBoardView({ tasks, sensors, onDragEnd }: {
               <div className="flex items-center gap-2 mb-3 px-1">
                 <ColIcon className={cn('w-4 h-4', col.color)} />
                 <span className="text-sm font-medium text-slate-300">{col.label}</span>
-                <span className="ml-auto text-xs text-slate-500 bg-white/5 px-2 py-0.5 rounded-full">
+                <span className="ml-auto text-xs text-[var(--text-muted)] bg-white/5 px-2 py-0.5 rounded-full">
                   {colTasks.length}
                 </span>
               </div>
@@ -476,7 +484,7 @@ function TaskBoardView({ tasks, sensors, onDragEnd }: {
                     <DraggableTaskCard key={task.id} task={task} />
                   ))}
                   {colTasks.length === 0 && (
-                    <div className="h-24 rounded-xl border border-dashed border-white/10 flex items-center justify-center">
+                    <div className="h-24 rounded-xl border border-dashed border-[var(--border)]10 flex items-center justify-center">
                       <p className="text-xs text-slate-600">No tasks</p>
                     </div>
                   )}

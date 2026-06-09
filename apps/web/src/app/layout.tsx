@@ -1,10 +1,11 @@
+// apps/web/src/app/layout.tsx
 import type { Metadata, Viewport } from 'next'
-import { Geist, Geist_Mono } from 'next/font/google'
+import { Outfit } from 'next/font/google'
+import { Suspense } from 'react'
 import './globals.css'
 import Providers from '@/components/providers'
 
-const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] })
-const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] })
+const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit' })
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -26,13 +27,37 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-      suppressHydrationWarning
-    >
-      <body className="min-h-full flex flex-col bg-slate-950 text-white" suppressHydrationWarning>
-        <Providers>{children}</Providers>
+    <html lang="en" className="h-full antialiased" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                var t = localStorage.getItem('wp-theme') || 'light';
+                document.documentElement.setAttribute('data-theme', t);
+                if (t === 'dark') {
+                  document.documentElement.classList.add('dark');
+                } else {
+                  document.documentElement.classList.remove('dark');
+                }
+              } catch(e) {}
+            `
+          }}
+        />
+      </head>
+      <body 
+        className={`${outfit.variable} font-sans antialiased min-h-full flex flex-col bg-[var(--bg-base)] text-[var(--text-primary)] transition-colors duration-200`} 
+        suppressHydrationWarning
+      >
+        <Suspense 
+          fallback={
+            <div className="min-h-screen bg-[var(--bg-base)] flex items-center justify-center">
+              <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+            </div>
+          }
+        >
+          <Providers>{children}</Providers>
+        </Suspense>
       </body>
     </html>
   )

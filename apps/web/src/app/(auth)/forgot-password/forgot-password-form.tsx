@@ -27,11 +27,11 @@ export default function ForgotPasswordForm() {
 
   if (sent) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[var(--bg-surface)] flex items-center justify-center p-4">
         <div className="text-center max-w-md w-full">
           <div className="text-5xl mb-4">✅</div>
-          <h2 className="text-2xl font-bold text-white mb-2">Check your inbox</h2>
-          <p className="text-slate-400 mb-6">Reset link sent to <strong className="text-white">{email}</strong></p>
+          <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-2">Check your inbox</h2>
+          <p className="text-[var(--text-secondary)] mb-6">Reset link sent to <strong className="text-[var(--text-primary)]">{email}</strong></p>
           <Link href="/login" className="text-[var(--primary,#6366F1)] hover:opacity-80 transition font-medium">
             Back to sign in
           </Link>
@@ -41,31 +41,31 @@ export default function ForgotPasswordForm() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[var(--bg-surface)] flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="flex justify-center mb-8"><WorkPulseLogo /></div>
-        <div className="bg-slate-900/60 border border-white/[0.06] rounded-2xl p-8">
-          <h1 className="text-2xl font-bold text-white mb-1">Reset your password</h1>
-          <p className="text-slate-400 text-sm mb-6">We'll send a reset link to your email</p>
+        <div className="bg-[var(--bg-surface)]/60 border border-[var(--border)][0.06] rounded-2xl p-8">
+          <h1 className="text-2xl font-bold text-[var(--text-primary)] mb-1">Reset your password</h1>
+          <p className="text-[var(--text-secondary)] text-sm mb-6">We'll send a reset link to your email</p>
           <form onSubmit={handleReset} className="space-y-4">
             <div>
-              <label className="text-sm text-slate-400 block mb-1.5">Email address</label>
+              <label className="text-sm text-[var(--text-secondary)] block mb-1.5">Email address</label>
               <input type="email" value={email} onChange={e => setEmail(e.target.value)}
                 placeholder="you@company.com" autoComplete="email"
-                className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-3
-                  text-white placeholder:text-slate-600 focus:outline-none
+                className="w-full bg-white/[0.04] border border-[var(--border)]10 rounded-xl px-4 py-3
+                  text-[var(--text-primary)] placeholder:text-slate-600 focus:outline-none
                   focus:ring-2 focus:ring-[var(--primary,#6366F1)]/50
-                  hover:border-white/20 transition-all text-sm"
+                  hover:border-[var(--border)]20 transition-all text-sm"
               />
             </div>
             <button type="submit" disabled={loading}
               className="w-full bg-[var(--primary,#6366F1)] hover:opacity-90 disabled:opacity-50
-                text-white font-semibold py-3 rounded-xl transition flex items-center justify-center gap-2">
+                text-[var(--text-primary)] font-semibold py-3 rounded-xl transition flex items-center justify-center gap-2">
               {loading && <Loader2 className="w-4 h-4 animate-spin" />}
               {loading ? 'Sending...' : 'Send reset link'}
             </button>
           </form>
-          <p className="text-center text-sm text-slate-500 mt-6">
+          <p className="text-center text-sm text-[var(--text-muted)] mt-6">
             <Link href="/login" className="text-[var(--primary,#6366F1)] hover:opacity-80 transition font-medium">
               ← Back to sign in
             </Link>

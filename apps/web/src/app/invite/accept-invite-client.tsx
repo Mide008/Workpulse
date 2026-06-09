@@ -1,100 +1,206 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { Loader2, CheckCircle2, XCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
-import { Loader2, CheckCircle2 } from 'lucide-react'
+import { WorkPulseLogo } from '@/components/ui/logo'
 import { toast } from 'sonner'
 
-interface Invite {
-  id: string
-  token: string
-  email: string
-  workspace: { name: string; logo_url: string | null; primary_color: string } | null
-  role: { name: string } | null
-}
-
-export default function AcceptInviteClient({ invite }: { invite: Invite }) {
+export default function AcceptInviteClient() {
   const router = useRouter()
-  const [loading, setLoading] = useState(false)
-  const [accepted, setAccepted] = useState(false)
+  const searchParams = useSearchParams()
+  const token = searchParams.get('token')
+  const [status, setStatus] = useState<'loading' | 'found' | 'invalid' | 'accepting' | 'done' | 'error'>('loading')
+  const [invite, setInvite] = useState<any>(null)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [fullName, setFullName] = useState('')
   const supabase = createClient()
 
-  async function handleAccept() {
-    setLoading(true)
-    try {
-      const res = await fetch('/api/invitations/accept', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: invite.token }),
+  useEffect(() => {
+    if (!token) { setStatus('invalid'); return }
+    supabase
+      .from('invitations')
+      .select('id, email, role, status, expires_at, workspace_id, workspaces(name, primary_color)')
+      .eq('token', token)
+      .eq('status', 'pending')
+      .maybeSingle()
+      .then(({ data, error }) => {
+        if (error || !data) { setStatus('invalid'); return }
+        if (new Date((data as any).expires_at) < new Date()) { setStatus('invalid'); return }
+        setInvite(data)
+        setEmail((data as any).email)
+        setStatus('found')
+      })
+  }, [token])
+
+  async function handleAccept(e: React.FormEvent) {
+    e.preventDefault()
+    if (!invite) return
+    setStatus('accepting')
+
+    // Sign up the user
+    const { data: authData, error: signupError } = await supabase.auth.signUp({
+      email: email.trim().toLowerCase(),
+      password,
+      options: { data: { full_name: fullName.trim() } },
+    })
+
+    if (signupError && !signupError.message.includes('already registered')) {
+      toast.error(signupError.message)
+      setStatus('found')
+      return
+    }
+
+    // If already registered, just sign in
+    if (signupError?.message.includes('already registered')) {
+      const { error: loginError } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      })
+      if (loginError) { toast.error('Wrong password for existing account'); setStatus('found'); return }
+    }
+
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { setStatus('error'); return }
+
+    // Get workspace roles
+    const { data: roles } = await supabase
+      .from('roles')
+      .select('id, name, level')
+      .eq('workspace_id', (invite as any).workspace_id)
+
+    const matchedRole = (roles ?? []).find((r: any) =>
+      r.name.toLowerCase() === (invite as any).role?.toLowerCase()
+    )
+    const defaultRole = (roles ?? []).find((r: any) => r.level === 4) // Staff
+
+    // Create user profile
+    const { error: profileError } = await supabase
+      .from('users')
+      .upsert({
+        id: user.id,
+        workspace_id: (invite as any).workspace_id,
+        role_id: matchedRole?.id ?? defaultRole?.id ?? null,
+        full_name: fullName.trim() || user.user_metadata?.full_name || email.split('@')[0],
+        email: email.trim().toLowerCase(),
+        is_active: true,
       })
 
-      if (!res.ok) {
-        const data = await res.json()
-        toast.error(data.error ?? 'Failed to accept invitation')
-        return
-      }
-
-      setAccepted(true)
-      setTimeout(() => router.push('/dashboard'), 2000)
-    } catch {
-      toast.error('Something went wrong. Please try again.')
-    } finally {
-      setLoading(false)
+    if (profileError) {
+      console.error('Profile error:', profileError)
+      setStatus('error')
+      return
     }
+
+    // Mark invitation as accepted
+    await supabase
+      .from('invitations')
+      .update({ status: 'accepted' })
+      .eq('id', (invite as any).id)
+
+    toast.success('Welcome to the team!')
+    setStatus('done')
+    setTimeout(() => router.push('/dashboard'), 1500)
   }
 
-  const workspaceName = invite.workspace?.name ?? 'a workspace'
+  const workspace = (invite as any)?.workspaces
+  const brandColor = workspace?.primary_color ?? '#6366F1'
 
-  if (accepted) {
+  if (status === 'loading') {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[var(--bg-surface)] flex items-center justify-center">
         <div className="text-center">
-          <CheckCircle2 className="w-16 h-16 text-green-400 mx-auto mb-4" />
-          <h1 className="text-2xl font-bold text-white mb-2">You&apos;re in!</h1>
-          <p className="text-slate-400">Redirecting to your dashboard...</p>
+          <Loader2 className="w-8 h-8 text-indigo-400 animate-spin mx-auto mb-3" />
+          <p className="text-[var(--text-secondary)]">Verifying your invitation...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (status === 'invalid') {
+    return (
+      <div className="min-h-screen bg-[var(--bg-surface)] flex items-center justify-center p-4">
+        <div className="text-center max-w-md">
+          <XCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">Invalid or expired invitation</h2>
+          <p className="text-[var(--text-secondary)] mb-6">This invitation link is no longer valid. Please ask your admin to send a new one.</p>
+          <a href="/login" className="text-indigo-400 hover:text-indigo-300 transition">Back to sign in</a>
+        </div>
+      </div>
+    )
+  }
+
+  if (status === 'done') {
+    return (
+      <div className="min-h-screen bg-[var(--bg-surface)] flex items-center justify-center p-4">
+        <div className="text-center max-w-md">
+          <CheckCircle2 className="w-12 h-12 text-emerald-400 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">You're in!</h2>
+          <p className="text-[var(--text-secondary)]">Taking you to your dashboard...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-      <div className="bg-white/5 border border-white/10 rounded-2xl p-8 max-w-md w-full text-center">
-        <div className="w-16 h-16 rounded-2xl bg-indigo-600 flex items-center justify-center mx-auto mb-6">
-          <svg viewBox="0 0 24 24" fill="none" className="w-8 h-8">
-            <path d="M3 12h4l3-9 4 18 3-9h4" stroke="white" strokeWidth="2.5"
-              strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+    <div className="min-h-screen bg-[var(--bg-surface)] flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="flex justify-center mb-8"><WorkPulseLogo /></div>
+
+        <div className="bg-[var(--bg-surface)]/60 border border-[var(--border)][0.06] rounded-2xl p-8">
+          {/* Workspace badge */}
+          <div className="flex items-center gap-3 mb-6 p-4 rounded-xl"
+            style={{ backgroundColor: `${brandColor}15`, border: `1px solid ${brandColor}30` }}>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-[var(--text-primary)] font-bold"
+              style={{ backgroundColor: brandColor }}>
+              {workspace?.name?.charAt(0)?.toUpperCase() ?? 'W'}
+            </div>
+            <div>
+              <p className="text-[var(--text-primary)] font-semibold">{workspace?.name ?? 'WorkPulse'}</p>
+              <p className="text-[var(--text-secondary)] text-sm">You've been invited as <strong className="text-[var(--text-primary)]">{(invite as any)?.role}</strong></p>
+            </div>
+          </div>
+
+          <h1 className="text-xl font-bold text-[var(--text-primary)] mb-1">Create your account</h1>
+          <p className="text-[var(--text-secondary)] text-sm mb-6">Set up your profile to join the workspace</p>
+
+          <form onSubmit={handleAccept} className="space-y-4">
+            <div>
+              <label className="text-sm text-[var(--text-secondary)] block mb-1.5">Full name</label>
+              <input value={fullName} onChange={e => setFullName(e.target.value)} required
+                placeholder="Your full name" autoFocus
+                className="w-full bg-white/[0.04] border border-[var(--border)]10 rounded-xl px-4 py-3
+                  text-[var(--text-primary)] placeholder:text-slate-600 focus:outline-none
+                  focus:ring-2 focus:ring-indigo-500/50 text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-sm text-[var(--text-secondary)] block mb-1.5">Email</label>
+              <input value={email} onChange={e => setEmail(e.target.value)} required type="email"
+                className="w-full bg-white/[0.04] border border-[var(--border)]10 rounded-xl px-4 py-3
+                  text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500/50 text-sm"
+              />
+            </div>
+            <div>
+              <label className="text-sm text-[var(--text-secondary)] block mb-1.5">Create password</label>
+              <input value={password} onChange={e => setPassword(e.target.value)} required
+                type="password" placeholder="Min. 8 characters" minLength={8}
+                className="w-full bg-white/[0.04] border border-[var(--border)]10 rounded-xl px-4 py-3
+                  text-[var(--text-primary)] placeholder:text-slate-600 focus:outline-none
+                  focus:ring-2 focus:ring-indigo-500/50 text-sm"
+              />
+            </div>
+            <button type="submit" disabled={status === 'accepting'}
+              className="w-full text-[var(--text-primary)] font-semibold py-3 rounded-xl transition
+                flex items-center justify-center gap-2 disabled:opacity-50"
+              style={{ backgroundColor: brandColor }}>
+              {status === 'accepting' && <Loader2 className="w-4 h-4 animate-spin" />}
+              {status === 'accepting' ? 'Setting up account...' : 'Join workspace'}
+            </button>
+          </form>
         </div>
-
-        <h1 className="text-2xl font-bold text-white mb-2">
-          You&apos;re invited
-        </h1>
-        <p className="text-slate-400 mb-1">
-          You have been invited to join
-        </p>
-        <p className="text-white font-semibold text-lg mb-1">{workspaceName}</p>
-        {invite.role && (
-          <p className="text-slate-500 text-sm mb-8">
-            Role: <span className="text-slate-300">{invite.role.name}</span>
-          </p>
-        )}
-
-        <button
-          onClick={handleAccept}
-          disabled={loading}
-          className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50
-            text-white font-semibold py-3 rounded-xl transition
-            flex items-center justify-center gap-2"
-        >
-          {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-          {loading ? 'Accepting...' : 'Accept invitation'}
-        </button>
-
-        <p className="text-slate-600 text-xs mt-4">
-          By accepting, you agree to WorkPulse&apos;s Terms of Service.
-        </p>
       </div>
     </div>
   )

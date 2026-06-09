@@ -48,7 +48,7 @@ export default function HeroSection() {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.1 }}
-          className="text-5xl md:text-7xl font-bold text-white leading-[1.08] tracking-tight mb-6"
+          className="text-5xl md:text-7xl font-bold text-[var(--text-primary)] leading-[1.08] tracking-tight mb-6"
         >
           The Team OS for{' '}
           <span className="gradient-text">
@@ -62,7 +62,7 @@ export default function HeroSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="text-xl text-slate-400 leading-relaxed max-w-2xl mx-auto mb-10"
+          className="text-xl text-[var(--text-secondary)] leading-relaxed max-w-2xl mx-auto mb-10"
         >
           Staff log tasks. Managers see the full picture in real time.
           KPIs generate automatically. Every performance review is evidence-backed, not opinion-based.
@@ -78,14 +78,14 @@ export default function HeroSection() {
           {/* 🔧 Changed href to /signup */}
           <Link href="/signup"
             className="group flex items-center gap-2 px-8 py-4 bg-indigo-600 hover:bg-indigo-500
-              text-white font-semibold rounded-2xl transition-all shadow-2xl
+              text-[var(--text-primary)] font-semibold rounded-2xl transition-all shadow-2xl
               shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:-translate-y-0.5 text-base">
             Start for free
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </Link>
           <Link href="/#features"
-            className="flex items-center gap-2 px-8 py-4 text-slate-300 hover:text-white
-              border border-white/10 hover:border-white/20 rounded-2xl transition-all text-base">
+            className="flex items-center gap-2 px-8 py-4 text-slate-300 hover:text-[var(--text-primary)]
+              border border-[var(--border)]10 hover:border-[var(--border)]20 rounded-2xl transition-all text-base">
             See how it works
           </Link>
         </motion.div>
@@ -98,7 +98,7 @@ export default function HeroSection() {
           className="flex flex-wrap items-center justify-center gap-6"
         >
           {PROOF_POINTS.map(point => (
-            <span key={point} className="flex items-center gap-2 text-sm text-slate-500">
+            <span key={point} className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
               <CheckCircle2 className="w-4 h-4 text-emerald-500" />
               {point}
             </span>
@@ -113,23 +113,23 @@ export default function HeroSection() {
           className="mt-20 relative"
         >
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent z-10 pointer-events-none" style={{ top: '60%' }} />
-          <div className="bg-slate-900/80 border border-white/[0.08] rounded-2xl overflow-hidden
+          <div className="bg-[var(--bg-surface)]/80 border border-[var(--border)][0.08] rounded-2xl overflow-hidden
             shadow-2xl shadow-black/50 max-w-5xl mx-auto">
             {/* Fake browser chrome */}
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-white/[0.06]
-              bg-slate-900">
+            <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--border)][0.06]
+              bg-[var(--bg-surface)]">
               <div className="flex gap-1.5">
                 <div className="w-3 h-3 rounded-full bg-red-500/60" />
                 <div className="w-3 h-3 rounded-full bg-amber-500/60" />
                 <div className="w-3 h-3 rounded-full bg-emerald-500/60" />
               </div>
-              <div className="flex-1 max-w-xs mx-auto bg-slate-800 rounded-lg px-3 py-1 text-xs
-                text-slate-500 text-center">
+              <div className="flex-1 max-w-xs mx-auto bg-[var(--bg-elevated)] rounded-lg px-3 py-1 text-xs
+                text-[var(--text-muted)] text-center">
                 app.workpulse.io/dashboard
               </div>
             </div>
             {/* Dashboard mockup */}
-            <div className="p-6 bg-slate-950">
+            <div className="p-6 bg-[var(--bg-surface)]">
               <div className="grid grid-cols-4 gap-3 mb-6">
                 {[
                   { label: 'Total Tasks', value: '247', color: 'text-indigo-400' },
@@ -138,15 +138,15 @@ export default function HeroSection() {
                   { label: 'Done This Week', value: '91', color: 'text-emerald-400' },
                 ].map(stat => (
                   <div key={stat.label}
-                    className="bg-slate-900/80 border border-white/[0.06] rounded-xl p-4">
-                    <p className="text-xs text-slate-500 mb-2">{stat.label}</p>
+                    className="bg-[var(--bg-surface)]/80 border border-[var(--border)][0.06] rounded-2xl p-6 border border-[var(--border)] shadow-sm">
+                    <p className="text-xs text-[var(--text-muted)] mb-2">{stat.label}</p>
                     <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
                   </div>
                 ))}
               </div>
               <div className="grid grid-cols-3 gap-3">
-                <div className="col-span-2 bg-slate-900/80 border border-white/[0.06] rounded-xl p-4">
-                  <p className="text-xs text-slate-500 mb-3">Task Activity</p>
+                <div className="col-span-2 bg-[var(--bg-surface)]/80 border border-[var(--border)][0.06] rounded-2xl p-6 border border-[var(--border)] shadow-sm">
+                  <p className="text-xs text-[var(--text-muted)] mb-3">Task Activity</p>
                   <div className="flex items-end gap-1.5 h-20">
                     {[40, 65, 45, 80, 55, 90, 70, 85, 60, 95, 75, 88, 65, 92].map((h, i) => (
                       <div key={i} className="flex-1 bg-indigo-500/20 rounded-sm relative overflow-hidden">
@@ -156,8 +156,8 @@ export default function HeroSection() {
                     ))}
                   </div>
                 </div>
-                <div className="bg-slate-900/80 border border-white/[0.06] rounded-xl p-4">
-                  <p className="text-xs text-slate-500 mb-3">KPI Score</p>
+                <div className="bg-[var(--bg-surface)]/80 border border-[var(--border)][0.06] rounded-2xl p-6 border border-[var(--border)] shadow-sm">
+                  <p className="text-xs text-[var(--text-muted)] mb-3">KPI Score</p>
                   <div className="flex items-center justify-center h-20">
                     <div className="text-center">
                       <p className="text-4xl font-bold text-indigo-400">87</p>

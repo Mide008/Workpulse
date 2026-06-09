@@ -19,7 +19,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip
 import { staggerItem } from '@/lib/motion'
 
 const statusConfig: Record<string, { label: string; color: string; icon: any; badge: BadgeVariant }> = {
-  not_started: { label: 'Not Started', color: 'text-slate-400', icon: Circle, badge: 'default' },
+  not_started: { label: 'Not Started', color: 'text-[var(--text-secondary)]', icon: Circle, badge: 'default' },
   in_progress: { label: 'In Progress', color: 'text-blue-400', icon: Clock, badge: 'info' },
   blocked:     { label: 'Blocked', color: 'text-red-400', icon: AlertTriangle, badge: 'danger' },
   review:      { label: 'In Review', color: 'text-purple-400', icon: Clock, badge: 'purple' },
@@ -70,35 +70,35 @@ export default function ProjectDetailClient({ project: initialProject, currentUs
     <div className="max-w-7xl mx-auto space-y-6 animate-fade-in">
       {/* Back */}
       <Link href="/projects"
-        className="inline-flex items-center gap-2 text-slate-400 hover:text-white
+        className="inline-flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]
           text-sm transition group">
         <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
         All projects
       </Link>
 
       {/* Project header */}
-      <div className="bg-slate-900/80 border border-white/[0.06] rounded-2xl p-6">
+      <div className="bg-[var(--bg-surface)]/80 border border-[var(--border)][0.06] rounded-2xl p-6">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="flex items-start gap-4">
             <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center text-white
+              className="w-12 h-12 rounded-xl flex items-center justify-center text-[var(--text-primary)]
                 font-bold text-lg shrink-0"
               style={{ backgroundColor: project.color }}
             >
               {project.name.charAt(0).toUpperCase()}
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white">{project.name}</h1>
+              <h1 className="text-xl font-bold text-[var(--text-primary)]">{project.name}</h1>
               {project.description && (
-                <p className="text-slate-400 text-sm mt-1 max-w-xl">{project.description}</p>
+                <p className="text-[var(--text-secondary)] text-sm mt-1 max-w-xl">{project.description}</p>
               )}
               <div className="flex items-center gap-3 mt-2 flex-wrap">
                 <div className="relative">
                   <select
                     value={project.status}
                     onChange={e => updateProject({ status: e.target.value })}
-                    className="appearance-none bg-white/[0.04] border border-white/10 rounded-lg
-                      pl-3 pr-7 py-1.5 text-xs text-white focus:outline-none
+                    className="appearance-none bg-white/[0.04] border border-[var(--border)]10 rounded-lg
+                      pl-3 pr-7 py-1.5 text-xs text-[var(--text-primary)] focus:outline-none
                       focus:ring-2 focus:ring-indigo-500/50 cursor-pointer"
                   >
                     <option value="active">Active</option>
@@ -106,10 +106,10 @@ export default function ProjectDetailClient({ project: initialProject, currentUs
                     <option value="completed">Completed</option>
                     <option value="archived">Archived</option>
                   </select>
-                  <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-500 pointer-events-none" />
+                  <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-[var(--text-muted)] pointer-events-none" />
                 </div>
                 {project.end_date && (
-                  <span className="text-xs text-slate-500 flex items-center gap-1">
+                  <span className="text-xs text-[var(--text-muted)] flex items-center gap-1">
                     <Calendar className="w-3 h-3" />
                     {formatDate(project.end_date)}
                   </span>
@@ -142,16 +142,16 @@ export default function ProjectDetailClient({ project: initialProject, currentUs
         </div>
 
         {/* Stats row */}
-        <div className="grid grid-cols-4 gap-3 mt-6 pt-6 border-t border-white/[0.06]">
+        <div className="grid grid-cols-4 gap-3 mt-6 pt-6 border-t border-[var(--border)][0.06]">
           {[
-            { label: 'Total', value: stats.total, color: 'text-white' },
+            { label: 'Total', value: stats.total, color: 'text-[var(--text-primary)]' },
             { label: 'In Progress', value: stats.inProgress, color: 'text-blue-400' },
             { label: 'Blocked', value: stats.blocked, color: 'text-red-400' },
             { label: 'Done', value: stats.done, color: 'text-emerald-400' },
           ].map(s => (
             <div key={s.label} className="text-center">
               <p className={cn('text-2xl font-bold', s.color)}>{s.value}</p>
-              <p className="text-xs text-slate-500 mt-0.5">{s.label}</p>
+              <p className="text-xs text-[var(--text-muted)] mt-0.5">{s.label}</p>
             </div>
           ))}
         </div>
@@ -159,8 +159,8 @@ export default function ProjectDetailClient({ project: initialProject, currentUs
         {/* Progress */}
         <div className="mt-4">
           <div className="flex justify-between mb-1.5">
-            <span className="text-xs text-slate-500">Overall progress</span>
-            <span className="text-xs font-semibold text-white">{project.progress}%</span>
+            <span className="text-xs text-[var(--text-muted)]">Overall progress</span>
+            <span className="text-xs font-semibold text-[var(--text-primary)]">{project.progress}%</span>
           </div>
           <Progress value={project.progress} size="md" animated />
         </div>
@@ -175,8 +175,8 @@ export default function ProjectDetailClient({ project: initialProject, currentUs
             className={cn(
               'px-4 py-2 rounded-xl text-sm font-medium capitalize transition-all',
               view === v
-                ? 'bg-indigo-600 text-white'
-                : 'text-slate-400 hover:text-white hover:bg-white/5'
+                ? 'bg-indigo-600 text-[var(--text-primary)]'
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-white/5'
             )}
           >
             {v} view
@@ -198,7 +198,7 @@ export default function ProjectDetailClient({ project: initialProject, currentUs
                     <div className="flex items-center gap-2 mb-3 px-1">
                       <ColIcon className={cn('w-4 h-4', cfg.color)} />
                       <span className="text-sm font-medium text-slate-300">{cfg.label}</span>
-                      <span className="ml-auto text-xs text-slate-500 bg-white/5
+                      <span className="ml-auto text-xs text-[var(--text-muted)] bg-white/5
                         px-2 py-0.5 rounded-full">
                         {colTasks.length}
                       </span>
@@ -215,14 +215,14 @@ export default function ProjectDetailClient({ project: initialProject, currentUs
                           <Link href={`/tasks/${task.id}`}>
                             <div className={cn(
                               'p-4 rounded-xl cursor-pointer group',
-                              'bg-slate-900/80 border border-white/[0.06]',
+                              'bg-[var(--bg-surface)]/80 border border-[var(--border)][0.06]',
                               'hover:border-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/5',
                               'transition-all duration-200',
                               task.status === 'blocked' && 'border-red-500/20'
                             )}>
                               <p className={cn(
                                 'text-sm font-medium leading-snug mb-2',
-                                task.status === 'done' ? 'text-slate-500 line-through' : 'text-slate-200'
+                                task.status === 'done' ? 'text-[var(--text-muted)] line-through' : 'text-slate-200'
                               )}>
                                 {task.title}
                               </p>
@@ -258,7 +258,7 @@ export default function ProjectDetailClient({ project: initialProject, currentUs
                         </motion.div>
                       ))}
                       {colTasks.length === 0 && (
-                        <div className="h-20 rounded-xl border border-dashed border-white/[0.06]
+                        <div className="h-20 rounded-xl border border-dashed border-[var(--border)][0.06]
                           flex items-center justify-center">
                           <p className="text-xs text-slate-700">No tasks</p>
                         </div>
@@ -274,7 +274,7 @@ export default function ProjectDetailClient({ project: initialProject, currentUs
             <div className="space-y-1.5">
               {tasks.length === 0 ? (
                 <div className="text-center py-16">
-                  <p className="text-slate-500">No tasks yet</p>
+                  <p className="text-[var(--text-muted)]">No tasks yet</p>
                   <Link href={`/tasks/new?projectId=${project.id}`}>
                     <Button variant="secondary" size="sm" className="mt-3"
                       icon={<Plus className="w-3.5 h-3.5" />}>
@@ -289,11 +289,11 @@ export default function ProjectDetailClient({ project: initialProject, currentUs
                   <Link key={task.id} href={`/tasks/${task.id}`}>
                     <div className="flex items-center gap-3 px-4 py-3 rounded-xl
                       bg-white/[0.02] border border-transparent
-                      hover:bg-white/[0.05] hover:border-white/[0.08] transition-all group">
+                      hover:bg-white/[0.05] hover:border-[var(--border)][0.08] transition-all group">
                       <TaskIcon className={cn('w-4 h-4 shrink-0', cfg.color)} />
                       <span className={cn(
                         'flex-1 text-sm truncate',
-                        task.status === 'done' ? 'text-slate-500 line-through' : 'text-slate-300 group-hover:text-white'
+                        task.status === 'done' ? 'text-[var(--text-muted)] line-through' : 'text-slate-300 group-hover:text-[var(--text-primary)]'
                       )}>
                         {task.title}
                       </span>

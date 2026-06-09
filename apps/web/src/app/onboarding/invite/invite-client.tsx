@@ -53,29 +53,29 @@ export default function OnboardingInviteClient() {
   return (
     <>
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white">Invite your team</h1>
-        <p className="text-slate-400 mt-1">Send invites now or skip and do it from Settings later.</p>
+        <h1 className="text-2xl font-bold text-[var(--text-primary)]">Invite your team</h1>
+        <p className="text-[var(--text-secondary)] mt-1">Send invites now or skip and do it from Settings later.</p>
       </div>
 
       <div className="space-y-3 mb-5">
         {emails.map((inv, i) => (
           <div key={i} className="flex items-center gap-2">
             <div className="flex-1 relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)]" />
               <input
                 type="email"
                 value={inv.email}
                 onChange={e => update(i, 'email', e.target.value)}
                 placeholder="colleague@company.com"
-                className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5
-                  text-white placeholder:text-slate-500 focus:outline-none
+                className="w-full bg-white/5 border border-[var(--border)]10 rounded-xl pl-10 pr-4 py-2.5
+                  text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none
                   focus:ring-2 focus:ring-indigo-500 transition text-sm"
               />
             </div>
             <select
               value={inv.role}
               onChange={e => update(i, 'role', e.target.value)}
-              className="bg-slate-800 border border-white/10 rounded-xl px-3 py-2.5
+              className="bg-[var(--bg-elevated)] border border-[var(--border)]10 rounded-xl px-3 py-2.5
                 text-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
               {['Executive', 'Manager', 'Team Lead', 'Staff'].map(r => (
@@ -84,7 +84,7 @@ export default function OnboardingInviteClient() {
             </select>
             {emails.length > 1 && (
               <button onClick={() => removeRow(i)}
-                className="p-2 text-slate-500 hover:text-red-400 transition">
+                className="p-2 text-[var(--text-muted)] hover:text-red-400 transition">
                 <Trash2 className="w-4 h-4" />
               </button>
             )}
@@ -101,8 +101,8 @@ export default function OnboardingInviteClient() {
       <div className="flex gap-3">
         <button
           onClick={() => router.push('/onboarding/complete')}
-          className="flex-1 border border-white/10 text-slate-400 hover:text-white
-            hover:border-white/30 font-medium py-3 rounded-xl transition text-sm"
+          className="flex-1 border border-[var(--border)]10 text-[var(--text-secondary)] hover:text-[var(--text-primary)]
+            hover:border-[var(--border)]30 font-medium py-3 rounded-xl transition text-sm"
         >
           Skip for now
         </button>
@@ -110,7 +110,7 @@ export default function OnboardingInviteClient() {
           onClick={handleSend}
           disabled={sending}
           className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50
-            text-white font-semibold py-3 rounded-xl transition flex items-center justify-center gap-2"
+            text-[var(--text-primary)] font-semibold py-3 rounded-xl transition flex items-center justify-center gap-2"
         >
           {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
           {sending ? 'Sending...' : 'Send & continue'}

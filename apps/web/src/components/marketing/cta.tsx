@@ -22,26 +22,26 @@ export default function CtaSection() {
             bg-indigo-600/10 rounded-full blur-[80px]" />
 
           <div className="relative">
-            <h2 className="text-4xl md:text-5xl font-bold text-white mb-5 tracking-tight">
+            <h2 className="text-4xl md:text-5xl font-bold text-[var(--text-primary)] mb-5 tracking-tight">
               Your team is ready.
               <br />
               <span className="gradient-text">Is your system?</span>
             </h2>
-            <p className="text-slate-400 text-lg mb-8 max-w-xl mx-auto">
+            <p className="text-[var(--text-secondary)] text-lg mb-8 max-w-xl mx-auto">
               Join teams who replaced spreadsheets, WhatsApp chains, and opinion-based
               reviews with WorkPulse.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link href="/onboarding/workspace"
                 className="group flex items-center gap-2 px-8 py-4 bg-indigo-600
-                  hover:bg-indigo-500 text-white font-semibold rounded-2xl transition-all
+                  hover:bg-indigo-500 text-[var(--text-primary)] font-semibold rounded-2xl transition-all
                   shadow-2xl shadow-indigo-500/25 hover:shadow-indigo-500/40 text-base">
                 Start for free — no card needed
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
               <Link href="/pricing"
-                className="px-8 py-4 text-slate-300 hover:text-white border border-white/10
-                  hover:border-white/20 rounded-2xl transition-all text-base">
+                className="px-8 py-4 text-slate-300 hover:text-[var(--text-primary)] border border-[var(--border)]10
+                  hover:border-[var(--border)]20 rounded-2xl transition-all text-base">
                 View pricing
               </Link>
             </div>

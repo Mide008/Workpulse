@@ -82,13 +82,13 @@ export default function FeaturesSection() {
             transition={{ duration: 0.5 }}
           >
             <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full
-              bg-white/5 border border-white/10 text-slate-400 text-sm font-medium mb-4">
+              bg-white/5 border border-[var(--border)]10 text-[var(--text-secondary)] text-sm font-medium mb-4">
               Everything you need
             </span>
-            <h2 className="text-4xl md:text-5xl font-bold text-white tracking-tight mb-4">
+            <h2 className="text-4xl md:text-5xl font-bold text-[var(--text-primary)] tracking-tight mb-4">
               Built for how teams actually work
             </h2>
-            <p className="text-slate-400 text-lg max-w-2xl mx-auto leading-relaxed">
+            <p className="text-[var(--text-secondary)] text-lg max-w-2xl mx-auto leading-relaxed">
               Not another tool that collects digital dust. Every feature in WorkPulse was designed
               to solve a real accountability, visibility, or performance problem.
             </p>
@@ -103,19 +103,19 @@ export default function FeaturesSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.4, delay: i * 0.06 }}
-              className="group p-6 rounded-2xl bg-slate-900/60 border border-white/[0.06]
-                hover:border-indigo-500/30 hover:bg-slate-900/80 hover:-translate-y-1
+              className="group p-6 rounded-2xl bg-[var(--bg-surface)]/60 border border-[var(--border)][0.06]
+                hover:border-indigo-500/30 hover:bg-[var(--bg-surface)]/80 hover:-translate-y-1
                 transition-all duration-300"
             >
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center
                 mb-4 ${feature.bg}`}>
                 <feature.icon className={`w-5 h-5 ${feature.color}`} />
               </div>
-              <h3 className="text-white font-semibold mb-2 group-hover:text-indigo-300
+              <h3 className="text-[var(--text-primary)] font-semibold mb-2 group-hover:text-indigo-300
                 transition-colors">
                 {feature.title}
               </h3>
-              <p className="text-slate-500 text-sm leading-relaxed">
+              <p className="text-[var(--text-muted)] text-sm leading-relaxed">
                 {feature.description}
               </p>
             </motion.div>

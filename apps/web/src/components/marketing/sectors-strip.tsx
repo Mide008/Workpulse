@@ -30,13 +30,13 @@ export default function SectorsSection() {
             transition={{ duration: 0.5 }}
           >
             <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full
-              bg-white/5 border border-white/10 text-slate-400 text-sm font-medium mb-4">
+              bg-white/5 border border-[var(--border)]10 text-[var(--text-secondary)] text-sm font-medium mb-4">
               Sector agnostic
             </span>
-            <h2 className="text-4xl md:text-5xl font-bold text-white tracking-tight mb-4">
+            <h2 className="text-4xl md:text-5xl font-bold text-[var(--text-primary)] tracking-tight mb-4">
               Works for every industry
             </h2>
-            <p className="text-slate-400 text-lg max-w-xl mx-auto">
+            <p className="text-[var(--text-secondary)] text-lg max-w-xl mx-auto">
               Any team with more than 5 people and a delivery problem is a WorkPulse team.
             </p>
           </motion.div>
@@ -51,17 +51,17 @@ export default function SectorsSection() {
               viewport={{ once: true }}
               transition={{ duration: 0.4, delay: i * 0.06 }}
               className="group flex items-start gap-4 p-5 rounded-2xl
-                bg-slate-900/60 border border-white/[0.06]
-                hover:border-indigo-500/30 hover:bg-slate-900/80
+                bg-[var(--bg-surface)]/60 border border-[var(--border)][0.06]
+                hover:border-indigo-500/30 hover:bg-[var(--bg-surface)]/80
                 transition-all duration-300"
             >
               <span className="text-3xl shrink-0">{sector.emoji}</span>
               <div>
-                <h3 className="text-white font-semibold mb-1 group-hover:text-indigo-300
+                <h3 className="text-[var(--text-primary)] font-semibold mb-1 group-hover:text-indigo-300
                   transition-colors">
                   {sector.name}
                 </h3>
-                <p className="text-slate-500 text-sm">{sector.desc}</p>
+                <p className="text-[var(--text-muted)] text-sm">{sector.desc}</p>
               </div>
             </motion.div>
           ))}

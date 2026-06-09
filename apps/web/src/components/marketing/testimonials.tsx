@@ -37,10 +37,10 @@ export default function TestimonialsSection() {
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
           >
-            <h2 className="text-4xl md:text-5xl font-bold text-white tracking-tight mb-4">
+            <h2 className="text-4xl md:text-5xl font-bold text-[var(--text-primary)] tracking-tight mb-4">
               Teams that switched never went back
             </h2>
-            <p className="text-slate-400 text-lg">
+            <p className="text-[var(--text-secondary)] text-lg">
               Real feedback from teams using WorkPulse across industries.
             </p>
           </motion.div>
@@ -54,7 +54,7 @@ export default function TestimonialsSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.4, delay: i * 0.1 }}
-              className="p-6 rounded-2xl bg-slate-900/60 border border-white/[0.06]
+              className="p-6 rounded-2xl bg-[var(--bg-surface)]/60 border border-[var(--border)][0.06]
                 flex flex-col"
             >
               {/* Stars */}
@@ -73,14 +73,14 @@ export default function TestimonialsSection() {
               <div className="flex items-center gap-3">
                 <div
                   className="w-10 h-10 rounded-full flex items-center justify-center
-                    text-white text-sm font-bold shrink-0"
+                    text-[var(--text-primary)] text-sm font-bold shrink-0"
                   style={{ backgroundColor: t.color }}
                 >
                   {t.initials}
                 </div>
                 <div>
-                  <p className="text-white text-sm font-semibold">{t.name}</p>
-                  <p className="text-slate-500 text-xs">{t.title}</p>
+                  <p className="text-[var(--text-primary)] text-sm font-semibold">{t.name}</p>
+                  <p className="text-[var(--text-muted)] text-xs">{t.title}</p>
                 </div>
               </div>
             </motion.div>

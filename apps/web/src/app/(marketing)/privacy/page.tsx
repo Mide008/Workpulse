@@ -4,12 +4,12 @@ export const metadata: Metadata = { title: 'Privacy Policy — WorkPulse' }
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-slate-950 pt-32 pb-24">
+    <div className="min-h-screen bg-[var(--bg-surface)] pt-32 pb-24">
       <div className="max-w-3xl mx-auto px-6">
-        <h1 className="text-4xl font-bold text-white mb-2">Privacy Policy</h1>
-        <p className="text-slate-500 text-sm mb-12">Last updated: January 2025</p>
+        <h1 className="text-4xl font-bold text-[var(--text-primary)] mb-2">Privacy Policy</h1>
+        <p className="text-[var(--text-muted)] text-sm mb-12">Last updated: January 2025</p>
 
-        <div className="space-y-10 text-slate-400 leading-relaxed">
+        <div className="space-y-10 text-[var(--text-secondary)] leading-relaxed">
           {[
             {
               title: '1. Information we collect',
@@ -62,7 +62,7 @@ export default function PrivacyPage() {
             },
           ].map(section => (
             <div key={section.title}>
-              <h2 className="text-lg font-semibold text-white mb-3">{section.title}</h2>
+              <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-3">{section.title}</h2>
               <p>{section.body}</p>
             </div>
           ))}

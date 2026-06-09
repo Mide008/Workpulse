@@ -105,8 +105,8 @@ export default function StructurePage() {
   return (
     <>
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white">Set up your structure</h1>
-        <p className="text-slate-400 mt-1">
+        <h1 className="text-2xl font-bold text-[var(--text-primary)]">Set up your structure</h1>
+        <p className="text-[var(--text-secondary)] mt-1">
           Add departments and teams. You can always add more later.
         </p>
       </div>
@@ -115,7 +115,7 @@ export default function StructurePage() {
         {/* Departments */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-white font-semibold">Departments</h2>
+            <h2 className="text-[var(--text-primary)] font-semibold">Departments</h2>
             <button
               onClick={addDepartment}
               className="flex items-center gap-1.5 text-sm text-indigo-400
@@ -132,14 +132,14 @@ export default function StructurePage() {
                   value={dept.name}
                   onChange={(e) => updateDepartment(i, e.target.value)}
                   placeholder={`e.g. ${['Sales', 'Operations', 'Technology', 'Finance'][i % 4]}`}
-                  className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5
-                    text-white placeholder:text-slate-500 focus:outline-none focus:ring-2
+                  className="flex-1 bg-white/5 border border-[var(--border)]10 rounded-xl px-4 py-2.5
+                    text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2
                     focus:ring-indigo-500 transition text-sm"
                 />
                 {departments.length > 1 && (
                   <button
                     onClick={() => removeDepartment(i)}
-                    className="p-2 text-slate-500 hover:text-red-400 transition"
+                    className="p-2 text-[var(--text-muted)] hover:text-red-400 transition"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -152,7 +152,7 @@ export default function StructurePage() {
         {/* Teams */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-white font-semibold">Teams</h2>
+            <h2 className="text-[var(--text-primary)] font-semibold">Teams</h2>
             <button
               onClick={addTeam}
               className="flex items-center gap-1.5 text-sm text-indigo-400
@@ -173,8 +173,8 @@ export default function StructurePage() {
                     setTeams(updated)
                   }}
                   placeholder="e.g. Frontend, Lettings, Claims"
-                  className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5
-                    text-white placeholder:text-slate-500 focus:outline-none focus:ring-2
+                  className="flex-1 bg-white/5 border border-[var(--border)]10 rounded-xl px-4 py-2.5
+                    text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2
                     focus:ring-indigo-500 transition text-sm"
                 />
                 <select
@@ -184,7 +184,7 @@ export default function StructurePage() {
                     updated[i].departmentIndex = Number(e.target.value)
                     setTeams(updated)
                   }}
-                  className="bg-slate-800 border border-white/10 rounded-xl px-3 py-2.5
+                  className="bg-[var(--bg-elevated)] border border-[var(--border)]10 rounded-xl px-3 py-2.5
                     text-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 >
                   {departments.map((d, di) => (
@@ -196,7 +196,7 @@ export default function StructurePage() {
                 {teams.length > 1 && (
                   <button
                     onClick={() => removeTeam(i)}
-                    className="p-2 text-slate-500 hover:text-red-400 transition"
+                    className="p-2 text-[var(--text-muted)] hover:text-red-400 transition"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -209,8 +209,8 @@ export default function StructurePage() {
         <div className="flex gap-3">
           <button
             onClick={() => router.push('/onboarding/invite')}
-            className="flex-1 border border-white/10 text-slate-400 hover:text-white
-              hover:border-white/30 font-medium py-3 rounded-xl transition text-sm"
+            className="flex-1 border border-[var(--border)]10 text-[var(--text-secondary)] hover:text-[var(--text-primary)]
+              hover:border-[var(--border)]30 font-medium py-3 rounded-xl transition text-sm"
           >
             Skip for now
           </button>
@@ -218,7 +218,7 @@ export default function StructurePage() {
             onClick={handleSave}
             disabled={saving}
             className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50
-              text-white font-semibold py-3 rounded-xl transition
+              text-[var(--text-primary)] font-semibold py-3 rounded-xl transition
               flex items-center justify-center gap-2"
           >
             {saving ? (

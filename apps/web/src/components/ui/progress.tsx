@@ -37,13 +37,13 @@ function Progress({
     <div className={cn('w-full', className)}>
       {showLabel && (
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-xs text-slate-500">Progress</span>
+          <span className="text-xs text-[var(--text-muted)]">Progress</span>
           <span className="text-xs font-medium text-slate-300">{Math.round(pct)}%</span>
         </div>
       )}
       <div
         className={cn(
-          'w-full bg-slate-800/80 rounded-full overflow-hidden',
+          'w-full bg-[var(--bg-elevated)]/80 rounded-full overflow-hidden',
           sizeMap[size],
           trackClassName
         )}

@@ -28,7 +28,7 @@ export default function MarketingNav() {
     <header className={cn(
       'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
       scrolled
-        ? 'bg-slate-950/90 backdrop-blur-xl border-b border-white/[0.06] shadow-2xl shadow-black/20'
+        ? 'bg-[var(--bg-surface)]/90 backdrop-blur-xl border-b border-[var(--border)][0.06] shadow-2xl shadow-black/20'
         : 'bg-transparent'
     )}>
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -38,7 +38,7 @@ export default function MarketingNav() {
         <nav className="hidden md:flex items-center gap-1">
           {NAV_LINKS.map(link => (
             <Link key={link.href} href={link.href}
-              className="px-4 py-2 text-sm text-slate-400 hover:text-white
+              className="px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]
                 hover:bg-white/5 rounded-xl transition-all">
               {link.label}
             </Link>
@@ -47,12 +47,12 @@ export default function MarketingNav() {
 
         <div className="hidden md:flex items-center gap-3">
           <Link href="/login"
-            className="px-4 py-2 text-sm text-slate-400 hover:text-white transition">
+            className="px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition">
             Sign in
           </Link>
           {/* 🔧 Changed href to /signup */}
           <Link href="/signup"
-            className="px-5 py-2.5 text-sm font-semibold text-white bg-indigo-600
+            className="px-5 py-2.5 text-sm font-semibold text-[var(--text-primary)] bg-indigo-600
               hover:bg-indigo-500 rounded-xl transition-all shadow-lg shadow-indigo-500/20
               hover:shadow-indigo-500/30">
             Get started free
@@ -62,7 +62,7 @@ export default function MarketingNav() {
         {/* Mobile menu button */}
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="md:hidden p-2 text-slate-400 hover:text-white transition"
+          className="md:hidden p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition"
         >
           {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
@@ -75,26 +75,26 @@ export default function MarketingNav() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="md:hidden bg-slate-900/95 backdrop-blur-xl border-b border-white/[0.06]"
+            className="md:hidden bg-[var(--bg-surface)]/95 backdrop-blur-xl border-b border-[var(--border)][0.06]"
           >
             <div className="px-6 py-4 space-y-1">
               {NAV_LINKS.map(link => (
                 <Link key={link.href} href={link.href}
                   onClick={() => setMobileOpen(false)}
-                  className="block px-4 py-3 text-sm text-slate-300 hover:text-white
+                  className="block px-4 py-3 text-sm text-slate-300 hover:text-[var(--text-primary)]
                     hover:bg-white/5 rounded-xl transition">
                   {link.label}
                 </Link>
               ))}
-              <div className="pt-3 border-t border-white/[0.06] flex flex-col gap-2">
+              <div className="pt-3 border-t border-[var(--border)][0.06] flex flex-col gap-2">
                 <Link href="/login" onClick={() => setMobileOpen(false)}
-                  className="px-4 py-3 text-sm text-slate-400 hover:text-white
+                  className="px-4 py-3 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]
                     hover:bg-white/5 rounded-xl transition text-center">
                   Sign in
                 </Link>
                 {/* 🔧 Changed href to /signup */}
                 <Link href="/signup" onClick={() => setMobileOpen(false)}
-                  className="px-4 py-3 text-sm font-semibold text-white text-center
+                  className="px-4 py-3 text-sm font-semibold text-[var(--text-primary)] text-center
                     bg-indigo-600 hover:bg-indigo-500 rounded-xl transition">
                   Get started free
                 </Link>

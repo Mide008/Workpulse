@@ -2,114 +2,159 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
+import { Bell, Check, CheckCheck, Trash2, Info, AlertTriangle, CheckCircle2, Zap } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Bell, CheckCheck, CheckCircle2, AlertTriangle, MessageSquare, Target, Clock } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
-import { cn, timeAgo } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
-import { staggerItem } from '@/lib/motion'
+import { formatDistanceToNow } from 'date-fns'
+import { staggerContainer, staggerItem } from '@/lib/motion'
 
-const typeConfig: Record<string, { icon: any; color: string; bg: string }> = {
-  task_overdue:  { icon: Clock, color: 'text-red-400', bg: 'bg-red-500/10' },
-  task_comment:  { icon: MessageSquare, color: 'text-blue-400', bg: 'bg-blue-500/10' },
-  task_assigned: { icon: CheckCircle2, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
-  goal_updated:  { icon: Target, color: 'text-violet-400', bg: 'bg-violet-500/10' },
-  blocker_alert: { icon: AlertTriangle, color: 'text-amber-400', bg: 'bg-amber-500/10' },
-  mention:       { icon: MessageSquare, color: 'text-indigo-400', bg: 'bg-indigo-500/10' },
-  default:       { icon: Bell, color: 'text-slate-400', bg: 'bg-slate-500/10' },
+const typeIcon: Record<string, any> = {
+  info: Info,
+  warning: AlertTriangle,
+  success: CheckCircle2,
+  task: Zap,
+  default: Bell,
+}
+
+const typeColor: Record<string, string> = {
+  info: 'text-blue-500 bg-blue-500/10',
+  warning: 'text-amber-500 bg-amber-500/10',
+  success: 'text-emerald-500 bg-emerald-500/10',
+  task: 'text-indigo-500 bg-indigo-500/10',
+  default: 'text-slate-500 bg-slate-500/10',
 }
 
 export default function NotificationsClient({
-  initialNotifications,
+  notifications: initial,
+  userId,
 }: {
-  initialNotifications: any[]
+  notifications: any[]
+  userId: string
 }) {
-  const [notifications, setNotifications] = useState(initialNotifications)
+  const router = useRouter()
+  const [notifications, setNotifications] = useState(initial)
+
   const unread = notifications.filter(n => !n.read).length
 
-  async function markAllRead() {
-    await fetch('/api/notifications', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })))
-    toast.success('All notifications marked as read')
+  async function markRead(id: string) {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))
+    await fetch(`/api/notifications`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    })
   }
 
-  async function markRead(id: string) {
+  async function markAllRead() {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })))
     await fetch('/api/notifications', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ids: [id] }),
+      body: JSON.stringify({ markAll: true }),
     })
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))
+    toast.success('All notifications marked as read')
+  }
+
+  async function deleteNotification(id: string) {
+    setNotifications(prev => prev.filter(n => n.id !== id))
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
-      <div className="flex items-start justify-between gap-4">
+    <div className="max-w-2xl mx-auto animate-fade-in">
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Notifications</h1>
-          <p className="text-slate-400 text-sm mt-0.5">
+          <h1 className="text-2xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+            Notifications
+          </h1>
+          <p className="text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>
             {unread > 0 ? `${unread} unread` : 'All caught up'}
           </p>
         </div>
         {unread > 0 && (
-          <Button variant="ghost" size="sm" onClick={markAllRead}
-            icon={<CheckCheck className="w-4 h-4" />}>
+          <button onClick={markAllRead}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium
+              border transition-all hover:opacity-80"
+            style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>
+            <CheckCheck className="w-4 h-4" />
             Mark all read
-          </Button>
+          </button>
         )}
       </div>
 
       {notifications.length === 0 ? (
-        <div className="text-center py-24">
-          <div className="w-16 h-16 rounded-2xl bg-white/[0.04] border border-white/[0.06]
-            flex items-center justify-center mx-auto mb-4">
-            <Bell className="w-7 h-7 text-slate-600" />
-          </div>
-          <p className="text-slate-400 font-medium">No notifications yet</p>
-          <p className="text-slate-600 text-sm mt-1">You'll be notified of important updates here</p>
+        <div className="text-center py-20 rounded-2xl border"
+          style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+          <Bell className="w-10 h-10 mx-auto mb-3" style={{ color: 'var(--text-muted)' }} />
+          <p className="font-medium" style={{ color: 'var(--text-primary)' }}>No notifications yet</p>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
+            Activity from tasks, projects, and team updates will appear here
+          </p>
         </div>
       ) : (
-        <div className="space-y-1.5">
-          {notifications.map((n, i) => {
-            const cfg = typeConfig[n.type] ?? typeConfig.default
-            const Icon = cfg.icon
+        <motion.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-2">
+          {notifications.map(notif => {
+            const Icon = typeIcon[notif.type] ?? typeIcon.default
+            const colors = typeColor[notif.type] ?? typeColor.default
             return (
-              <motion.div
-                key={n.id}
-                variants={staggerItem}
-                initial="initial"
-                animate="animate"
-                style={{ animationDelay: `${i * 30}ms` }}
-              >
+              <motion.div key={notif.id} variants={staggerItem}>
                 <div
-                  onClick={() => { if (!n.read) markRead(n.id) }}
                   className={cn(
-                    'flex items-start gap-4 p-4 rounded-2xl cursor-pointer transition-all',
-                    n.read
-                      ? 'bg-white/[0.02] border border-transparent hover:bg-white/[0.04]'
-                      : 'bg-indigo-500/5 border border-indigo-500/20 hover:border-indigo-500/30'
+                    'group flex items-start gap-4 p-4 rounded-2xl border transition-all cursor-pointer',
+                    !notif.read && 'ring-1 ring-indigo-500/20'
                   )}
+                  style={{
+                    background: notif.read ? 'var(--bg-surface)' : 'rgba(99,102,241,0.04)',
+                    borderColor: notif.read ? 'var(--border)' : 'rgba(99,102,241,0.15)',
+                  }}
+                  onClick={() => !notif.read && markRead(notif.id)}
                 >
-                  <div className={cn('p-2.5 rounded-xl shrink-0', cfg.bg)}>
-                    <Icon className={cn('w-4 h-4', cfg.color)} />
+                  <div className={cn('p-2 rounded-xl shrink-0 mt-0.5', colors)}>
+                    <Icon className="w-4 h-4" />
                   </div>
+
                   <div className="flex-1 min-w-0">
-                    <p className={cn('text-sm font-medium', n.read ? 'text-slate-300' : 'text-white')}>
-                      {n.title}
-                    </p>
-                    {n.body && (
-                      <p className="text-sm text-slate-500 mt-0.5 line-clamp-2">{n.body}</p>
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-sm font-semibold leading-snug"
+                        style={{ color: 'var(--text-primary)' }}>
+                        {notif.title}
+                      </p>
+                      {!notif.read && (
+                        <div className="w-2 h-2 rounded-full bg-indigo-500 shrink-0 mt-1.5" />
+                      )}
+                    </div>
+                    {notif.message && (
+                      <p className="text-sm mt-0.5 leading-relaxed"
+                        style={{ color: 'var(--text-secondary)' }}>
+                        {notif.message}
+                      </p>
                     )}
-                    <p className="text-xs text-slate-600 mt-1">{timeAgo(n.created_at)}</p>
+                    <p className="text-xs mt-1.5" style={{ color: 'var(--text-muted)' }}>
+                      {formatDistanceToNow(new Date(notif.created_at), { addSuffix: true })}
+                    </p>
                   </div>
-                  {!n.read && (
-                    <div className="w-2 h-2 rounded-full bg-indigo-500 shrink-0 mt-1.5" />
-                  )}
+
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition shrink-0">
+                    {!notif.read && (
+                      <button onClick={e => { e.stopPropagation(); markRead(notif.id) }}
+                        className="p-1.5 rounded-lg hover:bg-[var(--bg-elevated)] transition"
+                        title="Mark read">
+                        <Check className="w-3.5 h-3.5" style={{ color: 'var(--text-muted)' }} />
+                      </button>
+                    )}
+                    <button onClick={e => { e.stopPropagation(); deleteNotification(notif.id) }}
+                      className="p-1.5 rounded-lg hover:bg-red-500/10 hover:text-red-500 transition"
+                      style={{ color: 'var(--text-muted)' }}
+                      title="Delete">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             )
           })}
-        </div>
+        </motion.div>
       )}
     </div>
   )

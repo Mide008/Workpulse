@@ -120,7 +120,7 @@ export default function TaskDetailClient({ task: initialTask, currentUser, membe
 
   return (
     <div className="max-w-6xl mx-auto animate-fade-in">
-      <Link href="/tasks" className="inline-flex items-center gap-2 text-slate-400 hover:text-white
+      <Link href="/tasks" className="inline-flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]
         text-sm transition mb-6 group">
         <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
         All tasks
@@ -129,7 +129,7 @@ export default function TaskDetailClient({ task: initialTask, currentUser, membe
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Main */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-slate-900/80 border border-white/[0.06] rounded-2xl p-6">
+          <div className="bg-[var(--bg-surface)]/80 border border-[var(--border)][0.06] rounded-2xl p-6">
             {/* Blocker banner */}
             {task.blocker_reason && (
               <motion.div {...scaleIn}
@@ -154,7 +154,7 @@ export default function TaskDetailClient({ task: initialTask, currentUser, membe
                     value={titleValue}
                     onChange={e => setTitleValue(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') saveTitle(); if (e.key === 'Escape') { setEditingTitle(false); setTitleValue(task.title) } }}
-                    className="flex-1 bg-transparent text-xl font-bold text-white border-0
+                    className="flex-1 bg-transparent text-xl font-bold text-[var(--text-primary)] border-0
                       border-b-2 border-indigo-500 focus:outline-none pb-1"
                     autoFocus
                   />
@@ -162,18 +162,18 @@ export default function TaskDetailClient({ task: initialTask, currentUser, membe
                     <Check className="w-4 h-4" />
                   </button>
                   <button onClick={() => { setEditingTitle(false); setTitleValue(task.title) }}
-                    className="p-1.5 text-slate-400 hover:bg-white/5 rounded-lg transition">
+                    className="p-1.5 text-[var(--text-secondary)] hover:bg-white/5 rounded-lg transition">
                     <X className="w-4 h-4" />
                   </button>
                 </div>
               ) : (
                 <div className="flex items-start gap-3 group">
                   <h1 className={cn('text-xl font-bold leading-snug flex-1',
-                    task.status === 'done' ? 'text-slate-500 line-through' : 'text-white')}>
+                    task.status === 'done' ? 'text-[var(--text-muted)] line-through' : 'text-[var(--text-primary)]')}>
                     {task.title}
                   </h1>
                   <button onClick={() => setEditingTitle(true)}
-                    className="p-1.5 text-slate-600 hover:text-white opacity-0 group-hover:opacity-100
+                    className="p-1.5 text-slate-600 hover:text-[var(--text-primary)] opacity-0 group-hover:opacity-100
                       hover:bg-white/5 rounded-lg transition-all">
                     <Edit2 className="w-4 h-4" />
                   </button>
@@ -197,8 +197,8 @@ export default function TaskDetailClient({ task: initialTask, currentUser, membe
             {/* Progress slider */}
             <div className="mt-6">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-slate-400">Progress</span>
-                <span className="text-sm font-semibold text-white">{task.progress}%</span>
+                <span className="text-sm text-[var(--text-secondary)]">Progress</span>
+                <span className="text-sm font-semibold text-[var(--text-primary)]">{task.progress}%</span>
               </div>
               <Progress value={task.progress} size="lg" animated />
               <input
@@ -211,29 +211,29 @@ export default function TaskDetailClient({ task: initialTask, currentUser, membe
             </div>
 
             {task.description && (
-              <div className="mt-6 pt-6 border-t border-white/[0.06]">
-                <p className="text-sm text-slate-400 leading-relaxed whitespace-pre-wrap">{task.description}</p>
+              <div className="mt-6 pt-6 border-t border-[var(--border)][0.06]">
+                <p className="text-sm text-[var(--text-secondary)] leading-relaxed whitespace-pre-wrap">{task.description}</p>
               </div>
             )}
           </div>
 
           {/* Tabs */}
-          <div className="bg-slate-900/80 border border-white/[0.06] rounded-2xl overflow-hidden">
-            <div className="flex border-b border-white/[0.06]">
+          <div className="bg-[var(--bg-surface)]/80 border border-[var(--border)][0.06] rounded-2xl overflow-hidden">
+            <div className="flex border-b border-[var(--border)][0.06]">
               {(['comments', 'activity', 'attachments'] as const).map(tab => (
                 <button key={tab} onClick={() => setActiveTab(tab)}
                   className={cn('flex-1 py-3.5 text-sm font-medium capitalize transition-all',
                     activeTab === tab
-                      ? 'text-white border-b-2 border-indigo-500 bg-indigo-500/5'
-                      : 'text-slate-500 hover:text-slate-300 hover:bg-white/[0.02]')}>
+                      ? 'text-[var(--text-primary)] border-b-2 border-indigo-500 bg-indigo-500/5'
+                      : 'text-[var(--text-muted)] hover:text-slate-300 hover:bg-white/[0.02]')}>
                   {tab}
                   {tab === 'comments' && task.comments?.length > 0 && (
-                    <span className="ml-2 text-xs bg-white/10 text-slate-400 px-1.5 py-0.5 rounded-full">
+                    <span className="ml-2 text-xs bg-white/10 text-[var(--text-secondary)] px-1.5 py-0.5 rounded-full">
                       {task.comments.length}
                     </span>
                   )}
                   {tab === 'attachments' && task.attachments?.length > 0 && (
-                    <span className="ml-2 text-xs bg-white/10 text-slate-400 px-1.5 py-0.5 rounded-full">
+                    <span className="ml-2 text-xs bg-white/10 text-[var(--text-secondary)] px-1.5 py-0.5 rounded-full">
                       {task.attachments.length}
                     </span>
                   )}
@@ -248,7 +248,7 @@ export default function TaskDetailClient({ task: initialTask, currentUser, membe
                     {task.comments?.length === 0 && (
                       <div className="text-center py-8">
                         <MessageSquare className="w-8 h-8 text-slate-700 mx-auto mb-2" />
-                        <p className="text-sm text-slate-500">No comments yet</p>
+                        <p className="text-sm text-[var(--text-muted)]">No comments yet</p>
                       </div>
                     )}
                     {task.comments?.map((c: any) => (
@@ -260,14 +260,14 @@ export default function TaskDetailClient({ task: initialTask, currentUser, membe
                         </Avatar>
                         <div className="flex-1">
                           <div className="flex items-baseline gap-2 mb-1">
-                            <span className="text-sm font-medium text-white">{c.author?.full_name}</span>
-                            <span className="text-xs text-slate-500">{timeAgo(c.created_at)}</span>
+                            <span className="text-sm font-medium text-[var(--text-primary)]">{c.author?.full_name}</span>
+                            <span className="text-xs text-[var(--text-muted)]">{timeAgo(c.created_at)}</span>
                           </div>
                           <p className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">{c.content}</p>
                         </div>
                       </div>
                     ))}
-                    <div className="flex gap-3 pt-4 border-t border-white/[0.06]">
+                    <div className="flex gap-3 pt-4 border-t border-[var(--border)][0.06]">
                       <Avatar size="sm">
                         <AvatarFallback>{getInitials(currentUser.fullName)}</AvatarFallback>
                       </Avatar>
@@ -278,10 +278,10 @@ export default function TaskDetailClient({ task: initialTask, currentUser, membe
                           onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submitComment() }}
                           placeholder="Add a comment... (⌘+Enter to submit)"
                           rows={3}
-                          className="w-full bg-white/[0.03] border border-white/10 rounded-xl
-                            px-4 py-3 pr-12 text-sm text-white placeholder:text-slate-600
+                          className="w-full bg-white/[0.03] border border-[var(--border)]10 rounded-xl
+                            px-4 py-3 pr-12 text-sm text-[var(--text-primary)] placeholder:text-slate-600
                             resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/50
-                            hover:border-white/20 transition-all"
+                            hover:border-[var(--border)]20 transition-all"
                         />
                         <button onClick={submitComment} disabled={!comment.trim() || submittingComment}
                           className="absolute right-3 bottom-3 p-1.5 text-indigo-400 hover:text-indigo-300
@@ -298,7 +298,7 @@ export default function TaskDetailClient({ task: initialTask, currentUser, membe
                     {task.task_activities?.length === 0 && (
                       <div className="text-center py-8">
                         <Clock className="w-8 h-8 text-slate-700 mx-auto mb-2" />
-                        <p className="text-sm text-slate-500">No activity yet</p>
+                        <p className="text-sm text-[var(--text-muted)]">No activity yet</p>
                       </div>
                     )}
                     {task.task_activities?.map((a: any) => (
@@ -309,8 +309,8 @@ export default function TaskDetailClient({ task: initialTask, currentUser, membe
                             : <AvatarFallback>{getInitials(a.actor?.full_name ?? 'U')}</AvatarFallback>}
                         </Avatar>
                         <div>
-                          <p className="text-sm text-slate-400">
-                            <span className="text-white font-medium">{a.actor?.full_name}</span>
+                          <p className="text-sm text-[var(--text-secondary)]">
+                            <span className="text-[var(--text-primary)] font-medium">{a.actor?.full_name}</span>
                             {' '}{a.action} this task
                           </p>
                           <p className="text-xs text-slate-600 mt-0.5">{timeAgo(a.created_at)}</p>
@@ -324,29 +324,29 @@ export default function TaskDetailClient({ task: initialTask, currentUser, membe
                   <motion.div key="attachments" {...fadeIn}>
                     <div className="mb-4">
                       <input ref={fileRef} type="file" className="hidden" multiple />
-                      <Button variant="outline" size="sm" icon={<Paperclip className="w-4 h-4" />}
+                      <Button variant="secondary" size="sm" icon={<Paperclip className="w-4 h-4" />}
                         onClick={() => fileRef.current?.click()}>
                         Attach files
                       </Button>
                     </div>
                     {task.attachments?.length === 0 && (
-                      <div className="text-center py-8 border-2 border-dashed border-white/10 rounded-xl">
+                      <div className="text-center py-8 border-2 border-dashed border-[var(--border)]10 rounded-xl">
                         <Paperclip className="w-8 h-8 text-slate-700 mx-auto mb-2" />
-                        <p className="text-sm text-slate-500">No files attached</p>
+                        <p className="text-sm text-[var(--text-muted)]">No files attached</p>
                         <p className="text-xs text-slate-600 mt-1">Drag files here or click Attach files</p>
                       </div>
                     )}
                     <div className="space-y-2">
                       {task.attachments?.map((att: any) => (
                         <a key={att.id} href={att.file_url} target="_blank" rel="noopener noreferrer"
-                          className="flex items-center gap-3 p-3 rounded-xl border border-white/[0.06]
+                          className="flex items-center gap-3 p-3 rounded-xl border border-[var(--border)][0.06]
                             hover:border-indigo-500/30 hover:bg-white/[0.03] transition group">
                           <div className="w-9 h-9 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400 shrink-0">
                             <Paperclip className="w-4 h-4" />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm text-white truncate font-medium">{att.file_name}</p>
-                            <p className="text-xs text-slate-500">
+                            <p className="text-sm text-[var(--text-primary)] truncate font-medium">{att.file_name}</p>
+                            <p className="text-xs text-[var(--text-muted)]">
                               {(att.file_size / 1024).toFixed(1)} KB · {timeAgo(att.created_at)}
                             </p>
                           </div>
@@ -362,11 +362,11 @@ export default function TaskDetailClient({ task: initialTask, currentUser, membe
 
         {/* Sidebar */}
         <div className="space-y-4">
-          <div className="bg-slate-900/80 border border-white/[0.06] rounded-2xl p-5 space-y-4">
-            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</h3>
+          <div className="bg-[var(--bg-surface)]/80 border border-[var(--border)][0.06] rounded-2xl p-5 space-y-4">
+            <h3 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider">Actions</h3>
 
             <div>
-              <label className="text-xs text-slate-500 mb-1.5 block">Status</label>
+              <label className="text-xs text-[var(--text-muted)] mb-1.5 block">Status</label>
               <div className="relative">
                 <select
                   value={task.status}
@@ -375,49 +375,49 @@ export default function TaskDetailClient({ task: initialTask, currentUser, membe
                     if (val === 'blocked') { setShowBlockerModal(true) }
                     else { updateTask({ status: val }); setTask((p: any) => ({ ...p, status: val })) }
                   }}
-                  className="w-full appearance-none bg-white/[0.04] border border-white/10 rounded-xl
-                    px-3 py-2.5 pr-8 text-sm text-white focus:outline-none
-                    focus:ring-2 focus:ring-indigo-500/50 hover:border-white/20 transition-all cursor-pointer">
+                  className="w-full appearance-none bg-white/[0.04] border border-[var(--border)]10 rounded-xl
+                    px-3 py-2.5 pr-8 text-sm text-[var(--text-primary)] focus:outline-none
+                    focus:ring-2 focus:ring-indigo-500/50 hover:border-[var(--border)]20 transition-all cursor-pointer">
                   <option value="not_started">Not Started</option>
                   <option value="in_progress">In Progress</option>
                   <option value="review">In Review</option>
                   <option value="blocked">Blocked</option>
                   <option value="done">Done</option>
                 </select>
-                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none" />
+                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)] pointer-events-none" />
               </div>
             </div>
 
             <div>
-              <label className="text-xs text-slate-500 mb-1.5 block">Priority</label>
+              <label className="text-xs text-[var(--text-muted)] mb-1.5 block">Priority</label>
               <div className="relative">
                 <select
                   value={task.priority}
                   onChange={e => { updateTask({ priority: e.target.value }); setTask((p: any) => ({ ...p, priority: e.target.value })) }}
-                  className="w-full appearance-none bg-white/[0.04] border border-white/10 rounded-xl
-                    px-3 py-2.5 pr-8 text-sm text-white focus:outline-none
-                    focus:ring-2 focus:ring-indigo-500/50 hover:border-white/20 transition-all cursor-pointer">
+                  className="w-full appearance-none bg-white/[0.04] border border-[var(--border)]10 rounded-xl
+                    px-3 py-2.5 pr-8 text-sm text-[var(--text-primary)] focus:outline-none
+                    focus:ring-2 focus:ring-indigo-500/50 hover:border-[var(--border)]20 transition-all cursor-pointer">
                   <option value="low">Low</option>
                   <option value="medium">Medium</option>
                   <option value="high">High</option>
                   <option value="critical">Critical</option>
                 </select>
-                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none" />
+                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)] pointer-events-none" />
               </div>
             </div>
 
             <div>
-              <label className="text-xs text-slate-500 mb-1.5 block">Assigned to</label>
+              <label className="text-xs text-[var(--text-muted)] mb-1.5 block">Assigned to</label>
               <div className="relative">
                 <select
                   value={task.assigned_to ?? ''}
                   onChange={e => { updateTask({ assignedTo: e.target.value }); setTask((p: any) => ({ ...p, assigned_to: e.target.value })) }}
-                  className="w-full appearance-none bg-white/[0.04] border border-white/10 rounded-xl
-                    px-3 py-2.5 pr-8 text-sm text-white focus:outline-none
-                    focus:ring-2 focus:ring-indigo-500/50 hover:border-white/20 transition-all cursor-pointer">
+                  className="w-full appearance-none bg-white/[0.04] border border-[var(--border)]10 rounded-xl
+                    px-3 py-2.5 pr-8 text-sm text-[var(--text-primary)] focus:outline-none
+                    focus:ring-2 focus:ring-indigo-500/50 hover:border-[var(--border)]20 transition-all cursor-pointer">
                   {members.map(m => <option key={m.id} value={m.id}>{m.full_name}</option>)}
                 </select>
-                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none" />
+                <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)] pointer-events-none" />
               </div>
             </div>
 
@@ -436,14 +436,14 @@ export default function TaskDetailClient({ task: initialTask, currentUser, membe
             )}
           </div>
 
-          <div className="bg-slate-900/80 border border-white/[0.06] rounded-2xl p-5">
-            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">Details</h3>
+          <div className="bg-[var(--bg-surface)]/80 border border-[var(--border)][0.06] rounded-2xl p-5">
+            <h3 className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wider mb-4">Details</h3>
             <div className="space-y-3">
               {task.project && (
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-500">Project</span>
+                  <span className="text-xs text-[var(--text-muted)]">Project</span>
                   <Link href={`/projects/${task.project.id}`}
-                    className="flex items-center gap-1.5 text-xs text-white hover:text-indigo-400 transition">
+                    className="flex items-center gap-1.5 text-xs text-[var(--text-primary)] hover:text-indigo-400 transition">
                     <div className="w-2 h-2 rounded-full" style={{ backgroundColor: task.project.color }} />
                     {task.project.name}
                   </Link>
@@ -451,38 +451,38 @@ export default function TaskDetailClient({ task: initialTask, currentUser, membe
               )}
               {task.due_date && (
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-500">Due date</span>
-                  <span className={cn('text-xs font-medium', isOverdue ? 'text-red-400' : 'text-white')}>
+                  <span className="text-xs text-[var(--text-muted)]">Due date</span>
+                  <span className={cn('text-xs font-medium', isOverdue ? 'text-red-400' : 'text-[var(--text-primary)]')}>
                     {formatDate(task.due_date)}{isOverdue && ' · Overdue'}
                   </span>
                 </div>
               )}
               {task.estimated_hours && (
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-500">Estimated</span>
-                  <span className="text-xs text-white">{task.estimated_hours}h</span>
+                  <span className="text-xs text-[var(--text-muted)]">Estimated</span>
+                  <span className="text-xs text-[var(--text-primary)]">{task.estimated_hours}h</span>
                 </div>
               )}
               {task.actual_hours && (
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-500">Actual</span>
-                  <span className="text-xs text-white">{task.actual_hours}h</span>
+                  <span className="text-xs text-[var(--text-muted)]">Actual</span>
+                  <span className="text-xs text-[var(--text-primary)]">{task.actual_hours}h</span>
                 </div>
               )}
               <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-500">Created</span>
-                <span className="text-xs text-slate-400">{timeAgo(task.created_at)}</span>
+                <span className="text-xs text-[var(--text-muted)]">Created</span>
+                <span className="text-xs text-[var(--text-secondary)]">{timeAgo(task.created_at)}</span>
               </div>
               {task.creator && (
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-500">By</span>
-                  <span className="text-xs text-white">{task.creator.full_name}</span>
+                  <span className="text-xs text-[var(--text-muted)]">By</span>
+                  <span className="text-xs text-[var(--text-primary)]">{task.creator.full_name}</span>
                 </div>
               )}
             </div>
           </div>
 
-          <div className="bg-slate-900/80 border border-white/[0.06] rounded-2xl p-5">
+          <div className="bg-[var(--bg-surface)]/80 border border-[var(--border)][0.06] rounded-2xl p-5">
             <Button variant="ghost" size="sm"
               className="w-full text-red-400 hover:text-red-300 hover:bg-red-500/10"
               icon={<Trash2 className="w-4 h-4" />}
@@ -504,39 +504,39 @@ export default function TaskDetailClient({ task: initialTask, currentUser, membe
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
-              className="bg-slate-900 border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl"
+              className="bg-[var(--bg-surface)] border border-[var(--border)]10 rounded-2xl p-6 w-full max-w-md shadow-2xl"
               onClick={e => e.stopPropagation()}>
               <div className="flex items-center gap-3 mb-5">
                 <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center">
                   <AlertTriangle className="w-5 h-5 text-red-400" />
                 </div>
                 <div>
-                  <h3 className="text-white font-semibold">Mark as blocked</h3>
-                  <p className="text-slate-400 text-sm">Tell your team what&apos;s blocking this</p>
+                  <h3 className="text-[var(--text-primary)] font-semibold">Mark as blocked</h3>
+                  <p className="text-[var(--text-secondary)] text-sm">Tell your team what&apos;s blocking this</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm text-slate-400 mb-1.5 block">Category</label>
+                  <label className="text-sm text-[var(--text-secondary)] mb-1.5 block">Category</label>
                   <div className="relative">
                     <select value={blockerCategory} onChange={e => setBlockerCategory(e.target.value)}
-                      className="w-full appearance-none bg-white/[0.04] border border-white/10 rounded-xl
-                        px-4 py-2.5 pr-8 text-sm text-white focus:outline-none
-                        focus:ring-2 focus:ring-red-500/50 hover:border-white/20 transition-all cursor-pointer">
+                      className="w-full appearance-none bg-white/[0.04] border border-[var(--border)]10 rounded-xl
+                        px-4 py-2.5 pr-8 text-sm text-[var(--text-primary)] focus:outline-none
+                        focus:ring-2 focus:ring-red-500/50 hover:border-[var(--border)]20 transition-all cursor-pointer">
                       <option value="">Select a category</option>
                       {BLOCKER_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                     </select>
-                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none" />
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)] pointer-events-none" />
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm text-slate-400 mb-1.5 block">What&apos;s blocking this?</label>
+                  <label className="text-sm text-[var(--text-secondary)] mb-1.5 block">What&apos;s blocking this?</label>
                   <textarea value={blockerReason} onChange={e => setBlockerReason(e.target.value)}
                     placeholder="Describe what is blocking progress..."
                     rows={3}
-                    className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-3
-                      text-sm text-white placeholder:text-slate-600 resize-none focus:outline-none
-                      focus:ring-2 focus:ring-red-500/50 hover:border-white/20 transition-all" />
+                    className="w-full bg-white/[0.04] border border-[var(--border)]10 rounded-xl px-4 py-3
+                      text-sm text-[var(--text-primary)] placeholder:text-slate-600 resize-none focus:outline-none
+                      focus:ring-2 focus:ring-red-500/50 hover:border-[var(--border)]20 transition-all" />
                 </div>
               </div>
               <div className="flex gap-3 mt-5">

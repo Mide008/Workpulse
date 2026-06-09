@@ -7,10 +7,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <div className="flex justify-center mb-8">
           <WorkPulseLogo className="h-10 w-auto" />
         </div>
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl">
+        <div className="bg-white/5 backdrop-blur-xl border border-[var(--border)]10 rounded-2xl p-8 shadow-2xl">
           {children}
         </div>
-        <p className="text-center text-slate-500 text-sm mt-6">
+        <p className="text-center text-[var(--text-muted)] text-sm mt-6">
           © {new Date().getFullYear()} WorkPulse. All rights reserved.
         </p>
       </div>

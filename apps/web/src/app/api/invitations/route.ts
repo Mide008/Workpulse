@@ -1,132 +1,161 @@
+/* apps/web/src/app/api/invitations/route.ts */
+export const dynamic = 'force-dynamic'
+
 import { withAuth } from '@/lib/api-guard'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { createClient } from '@supabase/supabase-js'
 import { z } from 'zod'
-import nodemailer from 'nodemailer'
 import type { NextRequest } from 'next/server'
 
 const schema = z.object({
   email: z.string().email(),
-  roleId: z.string().uuid(),
-  teamId: z.string().uuid().optional(),
+  role: z.string().default('Staff'),
 })
 
-function createTransporter() {
-  return nodemailer.createTransport({
-    host: process.env.SMTP_HOST ?? 'smtp.gmail.com',
-    port: Number(process.env.SMTP_PORT ?? 587),
-    secure: false,
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-  })
-}
+export const POST = withAuth(async (req: NextRequest, ctx) => {
+  const body = await req.json()
+  const parsed = schema.safeParse(body)
+  if (!parsed.success) return Response.json({ error: 'Invalid email' }, { status: 400 })
 
-export const POST = withAuth(
-  async (req: NextRequest, ctx) => {
-    const body = await req.json()
-    const parsed = schema.safeParse(body)
+  const { email, role } = parsed.data
+  const cleanEmail = email.toLowerCase().trim()
+  const supabase = await createServerSupabaseClient()
 
-    if (!parsed.success) {
-      return Response.json({ error: 'Invalid input' }, { status: 400 })
+  const [{ data: workspace }, { data: inviter }] = await Promise.all([
+    supabase.from('workspaces').select('name, primary_color').eq('id', ctx.workspaceId).single(),
+    supabase.from('users').select('full_name').eq('id', ctx.userId).single(),
+  ])
+
+  const workspaceName = (workspace as any)?.name ?? 'WorkPulse'
+  const inviterName = (inviter as any)?.full_name ?? 'Your workspace admin'
+  const brandColor = (workspace as any)?.primary_color ?? '#6366F1'
+  const token = crypto.randomUUID()
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://workpulse-web-ten.vercel.app'
+  const inviteUrl = `${appUrl}/invite?token=${token}`
+
+  const { error: insertError } = await supabase.from('invitations').insert({
+    workspace_id: ctx.workspaceId,
+    email: cleanEmail,
+    token,
+    role,
+    invited_by: ctx.userId,
+    expires_at: expiresAt,
+    status: 'pending',
+  } as any)
+
+  if (insertError) {
+    console.error('Insert error:', insertError)
+    return Response.json({ error: 'Failed to create invitation' }, { status: 500 })
+  }
+
+  let emailSent = false
+
+  // Try Supabase Admin invite first (works for new users, sends Supabase's own email)
+  try {
+    const adminClient = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    )
+    const { error } = await adminClient.auth.admin.inviteUserByEmail(cleanEmail, {
+      redirectTo: inviteUrl,
+      data: { workspace_id: ctx.workspaceId, role, workspace_name: workspaceName },
+    })
+    if (!error) {
+      emailSent = true
+      console.log('Supabase invite sent to:', cleanEmail)
+    } else {
+      console.log('Supabase invite note:', error.message)
     }
+  } catch (err: any) {
+    console.error('Supabase admin error:', err?.message)
+  }
 
-    const supabase = await createServerSupabaseClient()
-
-    // Check for duplicate pending invite
-    const { data: existing } = await supabase
-      .from('invitations')
-      .select('id')
-      .eq('workspace_id', ctx.workspaceId)
-      .eq('email', parsed.data.email)
-      .eq('status', 'pending')
-      .maybeSingle()
-
-    if (existing) {
-      return Response.json(
-        { error: 'An invitation has already been sent to this email' },
-        { status: 409 }
-      )
-    }
-
-    // Create invitation record
-    const { data: invite, error: insertError } = await supabase
-      .from('invitations')
-      .insert({
-        workspace_id: ctx.workspaceId,
-        email: parsed.data.email,
-        role_id: parsed.data.roleId,
-        team_id: parsed.data.teamId,
-        invited_by: ctx.userId,
-      })
-      .select('id, token')
-      .single()
-
-    if (insertError || !invite) {
-      console.error('[Invitations] Insert error:', insertError)
-      return Response.json({ error: 'Failed to create invitation' }, { status: 500 })
-    }
-
-    // Fetch workspace name and inviter name separately to avoid join typing issues
-    const { data: workspaceData } = await supabase
-      .from('workspaces')
-      .select('name')
-      .eq('id', ctx.workspaceId)
-      .single()
-
-    const { data: inviterData } = await supabase
-      .from('users')
-      .select('full_name')
-      .eq('id', ctx.userId)
-      .single()
-
-    const workspaceName = (workspaceData as { name: string } | null)?.name ?? 'a workspace'
-    const inviterName = (inviterData as { full_name: string } | null)?.full_name ?? 'A team member'
-    const inviteToken = (invite as { id: string; token: string }).token
-    const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL}/invite?token=${inviteToken}`
-
-    // Send email
+  // Try Resend if Supabase failed (existing users)
+  if (!emailSent && process.env.RESEND_API_KEY) {
     try {
-      const transporter = createTransporter()
-      await transporter.sendMail({
-        from: `"WorkPulse" <${process.env.SMTP_USER}>`,
-        to: parsed.data.email,
-        subject: `You have been invited to join ${workspaceName} on WorkPulse`,
-        html: `
-          <div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:32px 0">
-            <div style="text-align:center;margin-bottom:32px">
-              <div style="display:inline-flex;align-items:center;gap:8px">
-                <div style="width:36px;height:36px;background:#6366F1;border-radius:8px;
-                  display:flex;align-items:center;justify-content:center">
-                </div>
-                <span style="font-size:20px;font-weight:700;color:#111">WorkPulse</span>
-              </div>
-            </div>
-            <h2 style="font-size:24px;font-weight:700;color:#111;margin:0 0 12px">
-              You have been invited
-            </h2>
-            <p style="color:#555;font-size:16px;line-height:1.6;margin:0 0 24px">
-              ${inviterName} has invited you to join <strong>${workspaceName}</strong> on WorkPulse
-              — a team operating system for tracking tasks, KPIs, and collaboration.
-            </p>
-            <a href="${inviteUrl}"
-              style="display:inline-block;background:#6366F1;color:#fff;padding:14px 28px;
-                border-radius:10px;text-decoration:none;font-weight:600;font-size:15px">
-              Accept invitation
-            </a>
-            <p style="color:#999;font-size:13px;margin-top:32px">
-              This invitation expires in 7 days. If you were not expecting this, you can safely
-              ignore this email.
-            </p>
-          </div>
-        `,
+      const fromEmail = process.env.RESEND_FROM_EMAIL ?? 'onboarding@resend.dev'
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: `WorkPulse <${fromEmail}>`,
+          to: [cleanEmail],
+          subject: `${inviterName} invited you to join ${workspaceName}`,
+          html: buildInviteHtml({ inviterName, workspaceName, role, inviteUrl, brandColor }),
+        }),
       })
-    } catch (emailErr) {
-      console.error('[Invitations] Email send error:', emailErr)
-      // Do not fail the request — invite is created, email is best-effort
+      const resBody = await res.json()
+      console.log('Resend response:', res.status, JSON.stringify(resBody))
+      if (res.ok) emailSent = true
+    } catch (err: any) {
+      console.error('Resend error:', err?.message)
     }
+  }
 
-    return Response.json({ success: true })
-  },
-  { permission: 'manage_members' }
-)
+  return Response.json({
+    success: true,
+    emailSent,
+    inviteUrl,
+    message: emailSent
+      ? `Invitation sent to ${cleanEmail}`
+      : `Invitation created. Share this link: ${inviteUrl}`,
+  }, { status: 201 })
+})
+
+export const GET = withAuth(async (_req: NextRequest, ctx) => {
+  const supabase = await createServerSupabaseClient()
+  const { data } = await supabase
+    .from('invitations')
+    .select('id, email, role, status, created_at, expires_at, token')
+    .eq('workspace_id', ctx.workspaceId)
+    .order('created_at', { ascending: false })
+  return Response.json({ invitations: data ?? [] })
+})
+
+export const DELETE = withAuth(async (req: NextRequest, ctx) => {
+  const { searchParams } = new URL(req.url)
+  const id = searchParams.get('id')
+  if (!id) return Response.json({ error: 'Missing id' }, { status: 400 })
+  const supabase = await createServerSupabaseClient()
+  const { error } = await supabase
+    .from('invitations')
+    .delete()
+    .eq('id', id)
+    .eq('workspace_id', ctx.workspaceId)
+  if (error) return Response.json({ error: error.message }, { status: 500 })
+  return Response.json({ success: true })
+})
+
+function buildInviteHtml({ inviterName, workspaceName, role, inviteUrl, brandColor }: {
+  inviterName: string; workspaceName: string; role: string; inviteUrl: string; brandColor: string
+}) {
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#020617;font-family:-apple-system,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="padding:40px 16px;">
+<tr><td align="center">
+<table width="560" cellpadding="0" cellspacing="0" style="background:#0f172a;border-radius:16px;border:1px solid rgba(255,255,255,0.08);overflow:hidden;max-width:560px;width:100%;">
+<tr><td style="background:${brandColor};padding:28px 36px;">
+  <div style="font-size:22px;font-weight:700;color:white;">WorkPulse</div>
+</td></tr>
+<tr><td style="padding:36px;">
+  <h2 style="color:#f1f5f9;font-size:22px;font-weight:700;margin:0 0 16px;">You're invited to join ${workspaceName}</h2>
+  <p style="color:#94a3b8;font-size:15px;line-height:1.6;margin:0 0 24px;">
+    <strong style="color:#e2e8f0;">${inviterName}</strong> invited you to join <strong style="color:#e2e8f0;">${workspaceName}</strong> as a <strong style="color:#e2e8f0;">${role}</strong>.
+  </p>
+  <div style="text-align:center;margin-bottom:28px;">
+    <a href="${inviteUrl}" style="display:inline-block;background:${brandColor};color:white;font-size:15px;font-weight:600;padding:14px 40px;border-radius:10px;text-decoration:none;">Accept Invitation →</a>
+  </div>
+  <p style="color:#475569;font-size:12px;margin:0 0 6px;">Or copy this link:</p>
+  <p style="color:#6366f1;font-size:11px;word-break:break-all;background:rgba(99,102,241,0.08);padding:10px;border-radius:8px;margin:0 0 20px;">${inviteUrl}</p>
+  <p style="color:#334155;font-size:11px;margin:0;">Expires in 7 days.</p>
+</td></tr>
+</table>
+</td></tr>
+</table>
+</body></html>`
+}

@@ -1,3 +1,4 @@
+// apps/web/src/components/ui/avatar.tsx
 import * as React from 'react'
 import { cn } from '@/lib/utils'
 
@@ -44,11 +45,15 @@ function AvatarFallback({ children, className, color }: { children?: React.React
   return (
     <div
       className={cn(
-        'flex h-full w-full items-center justify-center font-semibold text-white select-none',
-        !color && 'bg-gradient-to-br from-indigo-500 to-violet-600',
+        'flex h-full w-full items-center justify-center font-semibold select-none',
         className
       )}
-      style={color ? { background: color } : undefined}
+      style={{
+        background: color
+          ? color
+          : 'color-mix(in srgb, var(--primary, #6366F1) 20%, transparent)',
+        color: color ? 'white' : 'var(--primary, #6366F1)',
+      }}
     >
       {children}
     </div>

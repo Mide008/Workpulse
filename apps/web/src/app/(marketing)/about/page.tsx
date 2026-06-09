@@ -6,22 +6,22 @@ import { ArrowRight, CheckCircle2 } from 'lucide-react'
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-slate-950 pt-32 pb-24">
+    <div className="min-h-screen bg-[var(--bg-surface)] pt-32 pb-24">
       <div className="max-w-3xl mx-auto px-6">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-          <h1 className="text-5xl font-bold text-white tracking-tight mb-6">
+          <h1 className="text-5xl font-bold text-[var(--text-primary)] tracking-tight mb-6">
             About WorkPulse
           </h1>
-          <p className="text-xl text-slate-400 leading-relaxed mb-12">
+          <p className="text-xl text-[var(--text-secondary)] leading-relaxed mb-12">
             WorkPulse was built because we watched too many organisations operate
             without a single place to see what was happening, who was doing what,
             and whether anyone was actually performing.
           </p>
 
           <div className="space-y-8 mb-16">
-            <div className="p-6 rounded-2xl bg-slate-900/60 border border-white/[0.06]">
-              <h3 className="text-white font-semibold text-lg mb-3">The problem we solve</h3>
-              <p className="text-slate-400 leading-relaxed">
+            <div className="p-6 rounded-2xl bg-[var(--bg-surface)]/60 border border-[var(--border)][0.06]">
+              <h3 className="text-[var(--text-primary)] font-semibold text-lg mb-3">The problem we solve</h3>
+              <p className="text-[var(--text-secondary)] leading-relaxed">
                 Teams across every sector face the same fundamental problem: work is invisible,
                 accountability is absent, and performance is measured by opinion rather than evidence.
                 Staff use WhatsApp, spreadsheets, and email to report progress. Managers chase
@@ -30,8 +30,8 @@ export default function AboutPage() {
               </p>
             </div>
 
-            <div className="p-6 rounded-2xl bg-slate-900/60 border border-white/[0.06]">
-              <h3 className="text-white font-semibold text-lg mb-3">How we're different</h3>
+            <div className="p-6 rounded-2xl bg-[var(--bg-surface)]/60 border border-[var(--border)][0.06]">
+              <h3 className="text-[var(--text-primary)] font-semibold text-lg mb-3">How we're different</h3>
               <div className="space-y-2">
                 {[
                   'KPI engine built in — not bolted on',
@@ -48,9 +48,9 @@ export default function AboutPage() {
               </div>
             </div>
 
-            <div className="p-6 rounded-2xl bg-slate-900/60 border border-white/[0.06]">
-              <h3 className="text-white font-semibold text-lg mb-3">Our mission</h3>
-              <p className="text-slate-400 leading-relaxed">
+            <div className="p-6 rounded-2xl bg-[var(--bg-surface)]/60 border border-[var(--border)][0.06]">
+              <h3 className="text-[var(--text-primary)] font-semibold text-lg mb-3">Our mission</h3>
+              <p className="text-[var(--text-secondary)] leading-relaxed">
                 To give every organisation — regardless of size, sector, or technical maturity —
                 the visibility and evidence they need to lead properly, deliver consistently,
                 and recognise performance fairly.
@@ -61,7 +61,7 @@ export default function AboutPage() {
           <div className="text-center">
             <Link href="/signup"
               className="inline-flex items-center gap-2 px-8 py-4 bg-indigo-600
-                hover:bg-indigo-500 text-white font-semibold rounded-2xl transition-all
+                hover:bg-indigo-500 text-[var(--text-primary)] font-semibold rounded-2xl transition-all
                 shadow-2xl shadow-indigo-500/25 group">
               Start building your Team OS
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />

@@ -86,7 +86,7 @@ export default function NewProjectClient({ members, teams, currentUserId }: {
   return (
     <div className="max-w-2xl mx-auto animate-fade-in">
       <Link href="/projects"
-        className="inline-flex items-center gap-2 text-slate-400 hover:text-white
+        className="inline-flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]
           text-sm transition mb-6 group">
         <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
         Back to projects
@@ -94,8 +94,8 @@ export default function NewProjectClient({ members, teams, currentUserId }: {
 
       <motion.div {...fadeInUp}>
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-white">Create new project</h1>
-          <p className="text-slate-400 text-sm mt-1">Organise tasks and collaborate as a team</p>
+          <h1 className="text-2xl font-bold text-[var(--text-primary)]">Create new project</h1>
+          <p className="text-[var(--text-secondary)] text-sm mt-1">Organise tasks and collaborate as a team</p>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -106,8 +106,8 @@ export default function NewProjectClient({ members, teams, currentUserId }: {
               placeholder="Project name"
               autoFocus
               className={cn(
-                'w-full bg-transparent text-2xl font-semibold text-white',
-                'placeholder:text-slate-600 border-0 border-b-2 border-white/10',
+                'w-full bg-transparent text-2xl font-semibold text-[var(--text-primary)]',
+                'placeholder:text-slate-600 border-0 border-b-2 border-[var(--border)]10',
                 'focus:outline-none focus:border-indigo-500 pb-3 transition-colors',
                 errors.name && 'border-red-500'
               )}
@@ -120,15 +120,15 @@ export default function NewProjectClient({ members, teams, currentUserId }: {
             {...register('description')}
             placeholder="What is this project about?"
             rows={3}
-            className="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3
-              text-sm text-white placeholder:text-slate-600 resize-none
+            className="w-full bg-white/[0.03] border border-[var(--border)]10 rounded-xl px-4 py-3
+              text-sm text-[var(--text-primary)] placeholder:text-slate-600 resize-none
               focus:outline-none focus:ring-2 focus:ring-indigo-500/50
-              hover:border-white/20 transition-all"
+              hover:border-[var(--border)]20 transition-all"
           />
 
           {/* Color */}
           <div>
-            <label className="text-sm text-slate-500 block mb-3">Project colour</label>
+            <label className="text-sm text-[var(--text-muted)] block mb-3">Project colour</label>
             <div className="flex items-center gap-2 flex-wrap">
               {COLORS.map(c => (
                 <button
@@ -139,7 +139,7 @@ export default function NewProjectClient({ members, teams, currentUserId }: {
                   style={{ backgroundColor: c }}
                 >
                   {selectedColor === c && (
-                    <Check className="w-4 h-4 text-white absolute inset-0 m-auto" />
+                    <Check className="w-4 h-4 text-[var(--text-primary)] absolute inset-0 m-auto" />
                   )}
                 </button>
               ))}
@@ -148,7 +148,7 @@ export default function NewProjectClient({ members, teams, currentUserId }: {
 
           {/* Priority */}
           <div>
-            <label className="text-sm text-slate-500 block mb-3">Priority</label>
+            <label className="text-sm text-[var(--text-muted)] block mb-3">Priority</label>
             <div className="grid grid-cols-4 gap-2">
               {PRIORITIES.map(p => (
                 <button
@@ -158,8 +158,8 @@ export default function NewProjectClient({ members, teams, currentUserId }: {
                   className={cn(
                     'flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm font-medium transition-all',
                     priority === p.value
-                      ? 'border-indigo-500/50 bg-indigo-500/10 text-white'
-                      : 'border-white/10 bg-white/[0.02] text-slate-400 hover:border-white/20'
+                      ? 'border-indigo-500/50 bg-indigo-500/10 text-[var(--text-primary)]'
+                      : 'border-[var(--border)]10 bg-white/[0.02] text-[var(--text-secondary)] hover:border-[var(--border)]20'
                   )}
                 >
                   <div className={cn('w-2 h-2 rounded-full', p.dot)} />
@@ -172,42 +172,42 @@ export default function NewProjectClient({ members, teams, currentUserId }: {
           {/* Dates + Team */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="flex items-center gap-2 text-sm text-slate-500 mb-2">
+              <label className="flex items-center gap-2 text-sm text-[var(--text-muted)] mb-2">
                 <Calendar className="w-4 h-4" />Start date
               </label>
               <input {...register('startDate')} type="date"
-                className="w-full bg-white/[0.04] border border-white/10 rounded-xl
-                  px-4 py-2.5 text-sm text-white focus:outline-none
-                  focus:ring-2 focus:ring-indigo-500/50 hover:border-white/20 transition-all
+                className="w-full bg-white/[0.04] border border-[var(--border)]10 rounded-xl
+                  px-4 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none
+                  focus:ring-2 focus:ring-indigo-500/50 hover:border-[var(--border)]20 transition-all
                   [color-scheme:dark]"
               />
             </div>
             <div>
-              <label className="flex items-center gap-2 text-sm text-slate-500 mb-2">
+              <label className="flex items-center gap-2 text-sm text-[var(--text-muted)] mb-2">
                 <Calendar className="w-4 h-4" />End date
               </label>
               <input {...register('endDate')} type="date"
-                className="w-full bg-white/[0.04] border border-white/10 rounded-xl
-                  px-4 py-2.5 text-sm text-white focus:outline-none
-                  focus:ring-2 focus:ring-indigo-500/50 hover:border-white/20 transition-all
+                className="w-full bg-white/[0.04] border border-[var(--border)]10 rounded-xl
+                  px-4 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none
+                  focus:ring-2 focus:ring-indigo-500/50 hover:border-[var(--border)]20 transition-all
                   [color-scheme:dark]"
               />
             </div>
             {teams.length > 0 && (
               <div>
-                <label className="flex items-center gap-2 text-sm text-slate-500 mb-2">
+                <label className="flex items-center gap-2 text-sm text-[var(--text-muted)] mb-2">
                   <Users className="w-4 h-4" />Team
                 </label>
                 <div className="relative">
                   <select {...register('teamId')}
-                    className="w-full appearance-none bg-white/[0.04] border border-white/10
-                      rounded-xl px-4 py-2.5 pr-8 text-sm text-white focus:outline-none
-                      focus:ring-2 focus:ring-indigo-500/50 hover:border-white/20 transition-all cursor-pointer"
+                    className="w-full appearance-none bg-white/[0.04] border border-[var(--border)]10
+                      rounded-xl px-4 py-2.5 pr-8 text-sm text-[var(--text-primary)] focus:outline-none
+                      focus:ring-2 focus:ring-indigo-500/50 hover:border-[var(--border)]20 transition-all cursor-pointer"
                   >
                     <option value="">No team</option>
                     {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 pointer-events-none" />
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)] pointer-events-none" />
                 </div>
               </div>
             )}
@@ -215,7 +215,7 @@ export default function NewProjectClient({ members, teams, currentUserId }: {
 
           {/* Members */}
           <div>
-            <label className="flex items-center gap-2 text-sm text-slate-500 mb-3">
+            <label className="flex items-center gap-2 text-sm text-[var(--text-muted)] mb-3">
               <Users className="w-4 h-4" />
               Team members ({selectedMembers.length} selected)
             </label>
@@ -232,7 +232,7 @@ export default function NewProjectClient({ members, teams, currentUserId }: {
                       'flex items-center gap-2 p-2.5 rounded-xl border text-left transition-all',
                       isSelected
                         ? 'border-indigo-500/50 bg-indigo-500/10'
-                        : 'border-white/[0.06] bg-white/[0.02] hover:border-white/20',
+                        : 'border-[var(--border)][0.06] bg-white/[0.02] hover:border-[var(--border)]20',
                       isCreator && 'opacity-75 cursor-default'
                     )}
                   >
@@ -243,7 +243,7 @@ export default function NewProjectClient({ members, teams, currentUserId }: {
                       }
                     </Avatar>
                     <div className="min-w-0">
-                      <p className="text-xs font-medium text-white truncate">{m.full_name}</p>
+                      <p className="text-xs font-medium text-[var(--text-primary)] truncate">{m.full_name}</p>
                       {isCreator && <p className="text-[10px] text-[var(--primary)]">Owner</p>}
                     </div>
                     {isSelected && !isCreator && (
@@ -256,7 +256,7 @@ export default function NewProjectClient({ members, teams, currentUserId }: {
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-3 pt-4 border-t border-white/[0.06]">
+          <div className="flex items-center gap-3 pt-4 border-t border-[var(--border)][0.06]">
             <Button type="submit" variant="primary" loading={isSubmitting}
               className="flex-1 sm:flex-none sm:px-8">
               {isSubmitting ? 'Creating...' : 'Create Project'}

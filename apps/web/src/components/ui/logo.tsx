@@ -19,7 +19,7 @@ export function WorkPulseLogo({ className = 'h-8 w-auto', linkTo }: LogoProps) {
           />
         </svg>
       </div>
-      <span className="font-bold text-white text-lg tracking-tight">WorkPulse</span>
+      <span className="font-bold text-[var(--text-primary)] text-lg tracking-tight">WorkPulse</span>
     </div>
   )
 

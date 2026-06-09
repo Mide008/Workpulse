@@ -57,14 +57,14 @@ const SECTORS = [
 
 export default function SectorsPage() {
   return (
-    <div className="min-h-screen bg-slate-950 pt-32 pb-24">
+    <div className="min-h-screen bg-[var(--bg-surface)] pt-32 pb-24">
       <div className="max-w-7xl mx-auto px-6">
         <div className="text-center mb-16">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            <h1 className="text-5xl font-bold text-white tracking-tight mb-4">
+            <h1 className="text-5xl font-bold text-[var(--text-primary)] tracking-tight mb-4">
               Built for every sector
             </h1>
-            <p className="text-slate-400 text-lg max-w-2xl mx-auto">
+            <p className="text-[var(--text-secondary)] text-lg max-w-2xl mx-auto">
               WorkPulse is sector-agnostic by design. Any organisation with people, tasks,
               and delivery expectations can use it.
             </p>
@@ -78,20 +78,20 @@ export default function SectorsPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.06 }}
-              className="p-6 rounded-2xl bg-slate-900/60 border border-white/[0.06]
-                hover:border-white/[0.12] transition-all"
+              className="p-6 rounded-2xl bg-[var(--bg-surface)]/60 border border-[var(--border)][0.06]
+                hover:border-[var(--border)][0.12] transition-all"
             >
               <div className="flex items-center gap-3 mb-4">
                 <span className="text-4xl">{sector.emoji}</span>
                 <div>
-                  <h3 className="text-white font-bold text-lg">{sector.name}</h3>
-                  <p className="text-slate-500 text-sm">{sector.headline}</p>
+                  <h3 className="text-[var(--text-primary)] font-bold text-lg">{sector.name}</h3>
+                  <p className="text-[var(--text-muted)] text-sm">{sector.headline}</p>
                 </div>
               </div>
-              <p className="text-slate-400 text-sm leading-relaxed mb-5">{sector.description}</p>
+              <p className="text-[var(--text-secondary)] text-sm leading-relaxed mb-5">{sector.description}</p>
               <ul className="space-y-1.5">
                 {sector.useCases.map(uc => (
-                  <li key={uc} className="flex items-center gap-2 text-sm text-slate-500">
+                  <li key={uc} className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
                     <div className="w-1.5 h-1.5 rounded-full shrink-0"
                       style={{ backgroundColor: sector.color }} />
                     {uc}
@@ -103,10 +103,10 @@ export default function SectorsPage() {
         </div>
 
         <div className="text-center mt-16">
-          <p className="text-slate-500 mb-4">Don't see your sector?</p>
+          <p className="text-[var(--text-muted)] mb-4">Don't see your sector?</p>
           <Link href="/signup"
             className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600
-              hover:bg-indigo-500 text-white font-semibold rounded-xl transition group">
+              hover:bg-indigo-500 text-[var(--text-primary)] font-semibold rounded-xl transition group">
             Start free — works for any team
             <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
           </Link>

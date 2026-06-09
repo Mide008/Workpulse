@@ -18,7 +18,7 @@ export default function MobileNav() {
 
   return (
     <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40
-      bg-slate-900/95 backdrop-blur-xl border-t border-white/[0.06]
+      bg-[var(--bg-surface)]/95 backdrop-blur-xl border-t border-[var(--border)][0.06]
       safe-area-bottom">
       <div className="flex items-center justify-around px-2 py-2">
         {TABS.map(tab => {
@@ -27,7 +27,7 @@ export default function MobileNav() {
             <Link key={tab.href} href={tab.href}
               className={cn(
                 'flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all min-w-0',
-                isActive ? 'text-indigo-400' : 'text-slate-500 active:text-white'
+                isActive ? 'text-indigo-400' : 'text-[var(--text-muted)] active:text-[var(--text-primary)]'
               )}>
               <tab.icon className={cn('w-5 h-5 shrink-0', isActive && 'drop-shadow-[0_0_6px_rgba(99,102,241,0.6)]')} />
               <span className="text-[10px] font-medium truncate">{tab.label}</span>

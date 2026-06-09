@@ -22,13 +22,13 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
                 <div className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold border-2 border-indigo-500 text-indigo-400">
                   {step.id}
                 </div>
-                <span className="text-xs text-slate-500 hidden sm:block">{step.label}</span>
+                <span className="text-xs text-[var(--text-muted)] hidden sm:block">{step.label}</span>
               </div>
               {i < steps.length - 1 && <div className="w-12 h-px bg-slate-700 mb-5" />}
             </div>
           ))}
         </div>
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8">
+        <div className="bg-white/5 backdrop-blur-xl border border-[var(--border)]10 rounded-2xl p-8">
           {children}
         </div>
       </div>

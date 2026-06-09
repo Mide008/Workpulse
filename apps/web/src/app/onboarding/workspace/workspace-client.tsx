@@ -151,8 +151,8 @@ export default function OnboardingWorkspaceClient() {
   return (
     <>
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white">Set up your workspace</h1>
-        <p className="text-slate-400 mt-1">
+        <h1 className="text-2xl font-bold text-[var(--text-primary)]">Set up your workspace</h1>
+        <p className="text-[var(--text-secondary)] mt-1">
           This is your team&apos;s home in WorkPulse. You can change everything later.
         </p>
       </div>
@@ -161,23 +161,23 @@ export default function OnboardingWorkspaceClient() {
         {/* Logo upload */}
         <div>
           <label className="block text-sm font-medium text-slate-300 mb-2">
-            Workspace logo <span className="text-slate-500">(optional)</span>
+            Workspace logo <span className="text-[var(--text-muted)]">(optional)</span>
           </label>
           <div className="flex items-center gap-4">
             <div
-              className="w-16 h-16 rounded-xl border-2 border-dashed border-white/20
+              className="w-16 h-16 rounded-xl border-2 border-dashed border-[var(--border)]20
                 flex items-center justify-center overflow-hidden bg-white/5"
             >
               {logoPreview ? (
                 <img src={logoPreview} alt="Logo" className="w-full h-full object-cover" />
               ) : (
-                <Building2 className="w-6 h-6 text-slate-500" />
+                <Building2 className="w-6 h-6 text-[var(--text-muted)]" />
               )}
             </div>
             <label className="cursor-pointer">
               <div
                 className="flex items-center gap-2 px-4 py-2 rounded-lg border
-                  border-white/10 text-slate-300 hover:border-white/30 hover:text-white
+                  border-[var(--border)]10 text-slate-300 hover:border-[var(--border)]30 hover:text-[var(--text-primary)]
                   transition text-sm"
               >
                 <Upload className="w-4 h-4" />
@@ -202,8 +202,8 @@ export default function OnboardingWorkspaceClient() {
             {...register('name')}
             type="text"
             placeholder="Acme Corporation"
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3
-              text-white placeholder:text-slate-500 focus:outline-none focus:ring-2
+            className="w-full bg-white/5 border border-[var(--border)]10 rounded-xl px-4 py-3
+              text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2
               focus:ring-indigo-500 transition"
           />
           {errors.name && <p className="text-red-400 text-sm mt-1">{errors.name.message}</p>}
@@ -216,8 +216,8 @@ export default function OnboardingWorkspaceClient() {
           </label>
           <select
             {...register('industry')}
-            className="w-full bg-slate-800 border border-white/10 rounded-xl px-4 py-3
-              text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
+            className="w-full bg-[var(--bg-elevated)] border border-[var(--border)]10 rounded-xl px-4 py-3
+              text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
           >
             <option value="">Select your industry</option>
             {INDUSTRIES.map((ind) => (
@@ -246,10 +246,10 @@ export default function OnboardingWorkspaceClient() {
                   className="sr-only peer"
                 />
                 <div
-                  className="text-center py-2.5 rounded-xl border border-white/10
-                    text-slate-400 text-sm font-medium transition cursor-pointer
-                    peer-checked:border-indigo-500 peer-checked:text-white
-                    peer-checked:bg-indigo-500/10 hover:border-white/30"
+                  className="text-center py-2.5 rounded-xl border border-[var(--border)]10
+                    text-[var(--text-secondary)] text-sm font-medium transition cursor-pointer
+                    peer-checked:border-indigo-500 peer-checked:text-[var(--text-primary)]
+                    peer-checked:bg-indigo-500/10 hover:border-[var(--border)]30"
                 >
                   {size}
                 </div>
@@ -268,7 +268,7 @@ export default function OnboardingWorkspaceClient() {
             <input
               type="color"
               {...register('primaryColor')}
-              className="w-12 h-12 rounded-xl border border-white/10 bg-transparent
+              className="w-12 h-12 rounded-xl border border-[var(--border)]10 bg-transparent
                 cursor-pointer p-1"
             />
             <div className="flex gap-2">
@@ -285,7 +285,7 @@ export default function OnboardingWorkspaceClient() {
                 )
               )}
             </div>
-            <span className="text-slate-400 text-sm font-mono">{primaryColor}</span>
+            <span className="text-[var(--text-secondary)] text-sm font-mono">{primaryColor}</span>
           </div>
         </div>
 
@@ -293,7 +293,7 @@ export default function OnboardingWorkspaceClient() {
           type="submit"
           disabled={isSubmitting}
           className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50
-            text-white font-semibold py-3 rounded-xl transition
+            text-[var(--text-primary)] font-semibold py-3 rounded-xl transition
             flex items-center justify-center gap-2"
         >
           {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}

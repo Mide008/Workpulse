@@ -38,7 +38,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         )}
         <div className="relative">
           {icon && (
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none">
               {icon}
             </div>
           )}
@@ -46,10 +46,10 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             className={cn(
-              'w-full bg-white/[0.04] border border-white/10 rounded-xl text-white text-sm',
-              'placeholder:text-slate-500',
+              'w-full bg-white/[0.04] border border-[var(--border)]10 rounded-xl text-[var(--text-primary)] text-sm',
+              'placeholder:text-[var(--text-muted)]',
               'focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50',
-              'hover:border-white/20 transition-all duration-200',
+              'hover:border-[var(--border)]20 transition-all duration-200',
               'disabled:opacity-50 disabled:cursor-not-allowed',
               'py-2.5',
               icon ? 'pl-10' : 'pl-4',
@@ -60,13 +60,13 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             {...props}
           />
           {iconRight && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500">
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">
               {iconRight}
             </div>
           )}
         </div>
         {error && <p className="mt-1.5 text-sm text-red-400">{error}</p>}
-        {hint && !error && <p className="mt-1.5 text-xs text-slate-500">{hint}</p>}
+        {hint && !error && <p className="mt-1.5 text-xs text-[var(--text-muted)]">{hint}</p>}
       </div>
     )
   }

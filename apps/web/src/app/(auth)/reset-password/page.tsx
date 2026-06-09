@@ -44,8 +44,8 @@ export default function ResetPasswordPage() {
   return (
     <>
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-white">Set new password</h1>
-        <p className="text-slate-400 mt-1">Choose a strong password for your account</p>
+        <h1 className="text-2xl font-bold text-[var(--text-primary)]">Set new password</h1>
+        <p className="text-[var(--text-secondary)] mt-1">Choose a strong password for your account</p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
@@ -55,12 +55,12 @@ export default function ResetPasswordPage() {
             <input
               {...register('password')}
               type={showPassword ? 'text' : 'password'}
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-12
-                text-white placeholder:text-slate-500 focus:outline-none focus:ring-2
+              className="w-full bg-white/5 border border-[var(--border)]10 rounded-xl px-4 py-3 pr-12
+                text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2
                 focus:ring-indigo-500 transition"
             />
             <button type="button" onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition">
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition">
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
@@ -72,8 +72,8 @@ export default function ResetPasswordPage() {
           <input
             {...register('confirmPassword')}
             type="password"
-            className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3
-              text-white placeholder:text-slate-500 focus:outline-none focus:ring-2
+            className="w-full bg-white/5 border border-[var(--border)]10 rounded-xl px-4 py-3
+              text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2
               focus:ring-indigo-500 transition"
           />
           {errors.confirmPassword && <p className="text-red-400 text-sm mt-1">{errors.confirmPassword.message as string}</p>}
@@ -83,7 +83,7 @@ export default function ResetPasswordPage() {
           type="submit"
           disabled={isSubmitting}
           className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50
-            text-white font-semibold py-3 rounded-xl transition flex items-center justify-center gap-2"
+            text-[var(--text-primary)] font-semibold py-3 rounded-xl transition flex items-center justify-center gap-2"
         >
           {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
           {isSubmitting ? 'Updating...' : 'Update password'}

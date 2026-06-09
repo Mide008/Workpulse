@@ -1,5 +1,90 @@
+/* apps/web/src/app/globals.css */
+
+:root,
+[data-theme="light"] {
+  /* Raw baseline coordinate channels for runtime dynamic opacity mixing */
+  --color-slate-raw: 15, 23, 42;
+  
+  --bg-base: #F8FAFC;
+  --bg-surface: #FFFFFF;
+  --bg-elevated: #F1F5F9;
+  --bg-overlay: rgba(15, 23, 42, 0.04);
+  
+  /* Hardened structural boundaries across all layout engines */
+  --border: rgba(15, 23, 42, 0.12);
+  --border-strong: rgba(15, 23, 42, 0.22);
+  
+  /* High-density human-readable typographic contrast */
+  --text-primary: #0F172A;
+  --text-secondary: #334155;
+  --text-muted: #627185;
+  
+  --card-bg: #FFFFFF;
+  --card-border: rgba(15, 23, 42, 0.12);
+  --shadow: 0 1px 3px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.03);
+  --shadow-lg: 0 10px 40px rgba(15, 23, 42, 0.06);
+  --primary: #4F46E5;
+
+  /* Explicit component UI variable allocations */
+  --segmented-bg: #E2E8F0;
+  --segmented-btn-active-bg: #4F46E5;
+  --segmented-btn-active-text: #FFFFFF;
+  --segmented-btn-inactive-text: #475569;
+
+  --avatar-purple-bg: #EDE9FE;
+  --avatar-purple-text: #5B21B6;
+}
+
+[data-theme="dark"] {
+  --color-slate-raw: 248, 250, 252;
+
+  --bg-base: #020617;
+  --bg-surface: #0F172A;
+  --bg-elevated: #1E293B;
+  --bg-overlay: rgba(255, 255, 255, 0.04);
+  
+  --border: rgba(255, 255, 255, 0.06);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  
+  --text-primary: #F8FAFC;
+  --text-secondary: #94A3B8;
+  --text-muted: #475569;
+  
+  --card-bg: #0F172A;
+  --card-border: rgba(255, 255, 255, 0.08);
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.4);
+  --primary: #818CF8;
+
+  --segmented-bg: #0F172A;
+  --segmented-btn-active-bg: #818CF8;
+  --segmented-btn-active-text: #020617;
+  --segmented-btn-inactive-text: #94A3B8;
+
+  --avatar-purple-bg: #6B21A8;
+  --avatar-purple-text: #F3E8FF;
+}
+
+body {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
 @import "tailwindcss";
 
+/* Layout and Core Input Adaptations for Global Conformance */
+input, select, textarea {
+  background-color: var(--bg-surface) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border) !important;
+}
+
+input::placeholder {
+  color: var(--text-muted) !important;
+}
+
+/* Animations */
 @keyframes shimmer {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(200%); }
@@ -41,11 +126,7 @@
   50% { transform: translateY(-6px); }
 }
 
-@keyframes count-up {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
+/* Utility animation classes */
 .animate-fade-in { animation: fade-in 0.4s ease-out forwards; }
 .animate-fade-in-scale { animation: fade-in-scale 0.3s ease-out forwards; }
 .animate-slide-in-right { animation: slide-in-right 0.35s ease-out forwards; }
@@ -63,11 +144,16 @@
 .stagger-children > *:nth-child(7) { animation-delay: 360ms; }
 .stagger-children > *:nth-child(8) { animation-delay: 420ms; }
 
-/* Scrollbar */
+/* Scrollbar (theme‑aware via CSS variables) */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 999px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.18); }
+::-webkit-scrollbar-thumb { 
+  background: var(--border-strong); 
+  border-radius: 999px; 
+}
+::-webkit-scrollbar-thumb:hover { 
+  background: var(--text-muted); 
+}
 
 /* Selection */
 ::selection { background: rgba(99,102,241,0.3); color: white; }
@@ -79,12 +165,12 @@
   border-radius: 4px;
 }
 
-/* Glass card base */
+/* Glass card – now theme aware */
 .glass {
-  background: rgba(15, 23, 42, 0.6);
+  background: var(--bg-overlay);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255,255,255,0.06);
+  border: 1px solid var(--border);
 }
 
 /* Premium gradient text */
@@ -98,14 +184,6 @@
 /* Mobile safe areas */
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom);
-}
-
-/* Touch targets */
-@media (max-width: 1024px) {
-  button, a {
-    min-height: 44px;
-    min-width: 44px;
-  }
 }
 
 /* Prevent text size adjustment on orientation change */
@@ -124,91 +202,121 @@ html {
   z-index: 50 !important;
 }
 
-:root {
-  --primary: #6366F1; /* default */
-}
-
-/* Then use var(--primary) in Tailwind config */
-
-a, button.bg-indigo-600, .bg-indigo-600, .text-[var(--primary)], .hover\:text-indigo-300 {
-  /* This won't work directly; we'll use Tailwind arbitrary values */
-}
-
 [data-radix-select-content],
 [data-radix-popper-content-wrapper] {
   z-index: 100 !important;
   position: relative;
 }
 
-/* Ensure all Radix dropdowns appear above content */
-[data-radix-select-content],
-[data-radix-popper-content-wrapper] {
-  z-index: 100 !important;
-  position: relative;
-}
-
-/* Dark background for select options */
-select option {
-  background-color: #0f172a; /* slate-900 */
-  color: #f8fafc;            /* slate-50 */
-}
-
-/* Force all select options (including Radix) to use dark background */
-select option,
+/* Force Radix select options to use theme */
 [data-radix-select-content] option,
 [data-radix-select-viewport] option,
 [data-radix-popper-content-wrapper] option {
-  background-color: #0f172a !important; /* slate-900 */
-  color: #f8fafc !important;            /* slate-50 */
+  background-color: var(--bg-elevated) !important;
+  color: var(--text-primary) !important;
 }
 
-/* Force ALL select options to be dark, including Radix portals */
-select option,
-[data-radix-select-content] option,
-[data-radix-select-viewport] option,
-[data-radix-popper-content-wrapper] option {
-  background-color: #0f172a !important;
-  color: #f8fafc !important;
+/* Force all card text to be readable in both themes */
+[data-theme="light"] .text-slate-300,
+[data-theme="light"] .text-slate-400,
+[data-theme="light"] .text-slate-500 {
+  color: var(--text-secondary) !important;
 }
 
-/* Gradient text */
-.gradient-text {
-  background: linear-gradient(135deg, #818CF8 0%, #C084FC 50%, #F472B6 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+[data-theme="light"] .text-slate-600,
+[data-theme="light"] .text-slate-700 {
+  color: var(--text-muted) !important;
 }
 
-/* Fade in animation */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+[data-theme="light"] .bg-slate-900\/80,
+[data-theme="light"] .bg-slate-900 {
+  background-color: var(--bg-surface) !important;
 }
 
-.animate-fade-in {
-  animation: fadeIn 0.4s ease-out forwards;
+[data-theme="light"] .bg-slate-800,
+[data-theme="light"] .bg-slate-800\/60 {
+  background-color: var(--bg-elevated) !important;
 }
 
-/* Stagger children */
-.stagger-children > * {
-  animation: fadeIn 0.4s ease-out both;
+[data-theme="light"] .border-white\/\[0\.06\] {
+  border-color: var(--border) !important;
 }
 
-.stagger-children > *:nth-child(1) { animation-delay: 0ms; }
-.stagger-children > *:nth-child(2) { animation-delay: 60ms; }
-.stagger-children > *:nth-child(3) { animation-delay: 120ms; }
-.stagger-children > *:nth-child(4) { animation-delay: 180ms; }
-.stagger-children > *:nth-child(5) { animation-delay: 240ms; }
-.stagger-children > *:nth-child(6) { animation-delay: 300ms; }
+/* Analytics AI summary text — must be readable in light */
+[data-theme="light"] .ai-summary-text {
+  color: var(--text-primary) !important;
+}
 
-/* Scrollbar */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+/* Mobile touch targets */
+@media (max-width: 768px) {
+  button, a, [role="button"] {
+    min-height: 44px;
+  }
+  
+  .sidebar-nav-item {
+    min-height: 48px;
+  }
+}
 
-/* Select elements dark theme */
-select option {
-  background-color: #1e293b;
-  color: #f8fafc;
+/* Brand color overrides — these make --primary work everywhere */
+.btn-primary,
+[data-primary-btn] {
+  background-color: var(--primary, #6366F1) !important;
+  color: white !important;
+}
+
+/* Active nav states use brand color */
+.nav-active {
+  background-color: color-mix(in srgb, var(--primary, #6366F1) 15%, transparent) !important;
+  color: var(--primary, #6366F1) !important;
+}
+
+/* Period toggles, filter buttons — active state */
+.toggle-active {
+  background-color: var(--primary, #6366F1) !important;
+  color: white !important;
+}
+
+/* Chat send button, message bubbles own */
+.chat-own-bubble {
+  background-color: var(--primary, #6366F1) !important;
+  color: white !important;
+}
+
+/* Readable text on brand-colored backgrounds */
+.on-primary {
+  color: white !important;
+}
+
+/* Light theme: ensure text readable on surfaces */
+[data-theme="light"] .text-slate-200,
+[data-theme="light"] .text-slate-300 {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .text-slate-600,
+[data-theme="light"] .text-slate-700 {
+  color: var(--text-muted) !important;
+}
+
+[data-theme="light"] .bg-white\/\[0\.04\],
+[data-theme="light"] .bg-white\/\[0\.03\],
+[data-theme="light"] .bg-white\/\[0\.02\] {
+  background-color: var(--bg-elevated) !important;
+}
+
+[data-theme="light"] .border-white\/10,
+[data-theme="light"] .border-white\/\[0\.06\],
+[data-theme="light"] .border-white\/5 {
+  border-color: var(--border) !important;
+}
+
+[data-theme="light"] .hover\:bg-white\/5:hover,
+[data-theme="light"] .hover\:bg-white\/\[0\.04\]:hover {
+  background-color: var(--bg-elevated) !important;
+}
+
+/* Fix placeholder text in light mode */
+[data-theme="light"] .placeholder\:text-slate-600::placeholder {
+  color: var(--text-muted) !important;
 }
