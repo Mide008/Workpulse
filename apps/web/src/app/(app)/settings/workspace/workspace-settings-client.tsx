@@ -15,6 +15,16 @@ import { fadeInUp, staggerContainer, staggerItem } from '@/lib/motion'
 const COLORS = ['#6366F1','#8B5CF6','#EC4899','#10B981','#F59E0B','#EF4444','#06B6D4','#3B82F6']
 const INDUSTRIES = ['Technology','Real Estate','Healthcare','Construction','Legal & Finance','Education','Logistics','Retail','Hospitality','Other']
 
+// Helper: basic email validation + block common fake domains
+function isValidEmail(email: string): boolean {
+  const trimmed = email.trim()
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(trimmed)) return false
+  const domain = trimmed.split('@')[1]
+  const fakeDomains = ['test.com', 'example.com', 'fake.com', 'mailinator.com', 'tempmail.com', 'guerrillamail.com']
+  return !fakeDomains.includes(domain)
+}
+
 export default function WorkspaceSettingsClient({ workspace: initial, user }: { workspace: any; user: any }) {
   const supabase = createClient()
   const router = useRouter()
@@ -126,19 +136,24 @@ export default function WorkspaceSettingsClient({ workspace: initial, user }: { 
 
   async function handleInvite(e: React.FormEvent) {
     e.preventDefault()
-    if (!inviteEmail.trim()) return
+    const email = inviteEmail.trim()
+    if (!email) { toast.error('Please enter an email address'); return }
+    if (!isValidEmail(email)) {
+      toast.error('Please enter a valid email address (company domains only)')
+      return
+    }
     setInviting(true)
     try {
       const res = await fetch('/api/invitations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: inviteEmail.trim(), role: inviteRole }),
+        body: JSON.stringify({ email, role: inviteRole }),
       })
       const data = await res.json()
       if (res.ok) {
         setLastInviteUrl(data.inviteUrl)
         if (data.emailSent) {
-          toast.success(`Invitation email sent to ${inviteEmail}`)
+          toast.success(`Invitation email sent to ${email}`)
         } else {
           toast.info('Invitation created — copy and share the link below')
         }

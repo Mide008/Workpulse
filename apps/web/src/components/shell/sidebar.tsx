@@ -16,6 +16,10 @@ import {
   Bell,
   LogOut,
   X,
+  TrendingUp,
+  Building2,
+  Activity,
+  CreditCard,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { WorkPulseLogo } from '@/components/ui/logo'
@@ -35,6 +39,13 @@ const NAV = [
   { href: '/chat', label: 'Chat', icon: MessageSquare },
 ]
 
+const CRM_NAV = [
+  { href: '/crm/pipeline', label: 'Pipeline', icon: TrendingUp },
+  { href: '/crm/contacts', label: 'Contacts', icon: Users },
+  { href: '/crm/companies', label: 'Companies', icon: Building2 },
+  { href: '/crm/activities', label: 'Activities', icon: Activity },
+]
+
 interface SidebarProps {
   user: {
     fullName: string
@@ -45,6 +56,7 @@ interface SidebarProps {
     workspaceLogo: string | null
     avatarUrl: string | null
     primaryColor: string
+    plan: string
   }
   open: boolean
   onClose: () => void
@@ -53,6 +65,8 @@ interface SidebarProps {
 export default function Sidebar({ user, open, onClose }: SidebarProps) {
   const pathname = usePathname()
   const filteredNav = NAV.filter((item) => !item.minLevel || user.roleLevel <= item.minLevel)
+
+  const showCRM = (user.plan === 'pro' || user.plan === 'enterprise') && user.roleLevel <= 2
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -135,6 +149,40 @@ export default function Sidebar({ user, open, onClose }: SidebarProps) {
                 </SimpleTooltip>
               )
             })}
+
+            {/* CRM Section */}
+            {showCRM && (
+              <div className="mt-6 pt-5 border-t" style={{ borderColor: 'var(--border)' }}>
+                <p className="text-[10px] font-semibold uppercase tracking-widest px-3 mb-2"
+                  style={{ color: 'var(--text-muted)' }}>
+                  CRM
+                </p>
+                {CRM_NAV.map((item) => {
+                  const isActive = pathname.startsWith(item.href)
+                  return (
+                    <Link key={item.href} href={item.href} onClick={onClose} className="block">
+                      <div
+                        className={cn(
+                          'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
+                          isActive ? '' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)]'
+                        )}
+                        style={
+                          isActive
+                            ? {
+                                background: `color-mix(in srgb, var(--primary, #6366F1) 12%, transparent)`,
+                                color: 'var(--primary, #6366F1)',
+                              }
+                            : undefined
+                        }
+                      >
+                        <item.icon className="w-4 h-4 shrink-0" />
+                        {item.label}
+                      </div>
+                    </Link>
+                  )
+                })}
+              </div>
+            )}
           </nav>
 
           {/* Bottom Controls */}
@@ -155,6 +203,29 @@ export default function Sidebar({ user, open, onClose }: SidebarProps) {
               <Settings className="w-4 h-4" />
               Settings
             </Link>
+            {user.roleLevel <= 1 && (
+              <Link
+                href="/settings/billing"
+                onClick={onClose}
+                className={cn(
+                  'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
+                  pathname.startsWith('/settings/billing')
+                    ? ''
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)]'
+                )}
+                style={
+                  pathname.startsWith('/settings/billing')
+                    ? {
+                        background: `color-mix(in srgb, var(--primary, #6366F1) 12%, transparent)`,
+                        color: 'var(--primary, #6366F1)',
+                      }
+                    : undefined
+                }
+              >
+                <CreditCard className="w-4 h-4 shrink-0" />
+                Billing
+              </Link>
+            )}
             <SimpleTooltip content="Sign out" side="right">
               <form action={signOut}>
                 <button

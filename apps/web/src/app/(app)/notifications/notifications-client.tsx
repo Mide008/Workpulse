@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { formatDistanceToNow } from 'date-fns'
 import { staggerContainer, staggerItem } from '@/lib/motion'
+import { EmptyState } from '@/components/ui/empty-state'
 
 const typeIcon: Record<string, any> = {
   info: Info,
@@ -84,14 +85,11 @@ export default function NotificationsClient({
       </div>
 
       {notifications.length === 0 ? (
-        <div className="text-center py-20 rounded-2xl border"
-          style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
-          <Bell className="w-10 h-10 mx-auto mb-3" style={{ color: 'var(--text-muted)' }} />
-          <p className="font-medium" style={{ color: 'var(--text-primary)' }}>No notifications yet</p>
-          <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
-            Activity from tasks, projects, and team updates will appear here
-          </p>
-        </div>
+        <EmptyState
+          icon={<Bell className="w-7 h-7" />}
+          title="All caught up"
+          description="Notifications appear here when tasks are assigned to you, blockers are flagged, goals are updated, or team members comment on your work."
+        />
       ) : (
         <motion.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-2">
           {notifications.map(notif => {

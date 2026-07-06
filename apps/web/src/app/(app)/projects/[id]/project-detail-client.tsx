@@ -1,327 +1,437 @@
+// apps/web/src/app/(app)/projects/[id]/project-detail-client.tsx
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useCallback } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { motion } from 'framer-motion'
 import {
-  ArrowLeft, Plus, Clock, AlertTriangle,
-  CheckCircle2, Circle, Users, Calendar,
-  Edit2, Trash2, ChevronDown, MoreHorizontal,
+  ArrowLeft, Plus, CheckCircle2, Clock, AlertTriangle,
+  Circle, CheckCheck, Users, Activity, MoreHorizontal,
+  Edit3, Save, X, Trash2, Calendar, TrendingUp, Loader2,
 } from 'lucide-react'
+import { cn, getInitials, formatDate } from '@/lib/utils'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { staggerContainer, staggerItem } from '@/lib/motion'
 import { toast } from 'sonner'
-import { cn, formatDate, getInitials } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
-import { Badge, type BadgeVariant } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
-import { Avatar, AvatarImage, AvatarFallback, AvatarGroup } from '@/components/ui/avatar'
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
-import { staggerItem } from '@/lib/motion'
+import { formatDistanceToNow } from 'date-fns'
 
-const statusConfig: Record<string, { label: string; color: string; icon: any; badge: BadgeVariant }> = {
-  not_started: { label: 'Not Started', color: 'text-[var(--text-secondary)]', icon: Circle, badge: 'default' },
-  in_progress: { label: 'In Progress', color: 'text-blue-400', icon: Clock, badge: 'info' },
-  blocked:     { label: 'Blocked', color: 'text-red-400', icon: AlertTriangle, badge: 'danger' },
-  review:      { label: 'In Review', color: 'text-purple-400', icon: Clock, badge: 'purple' },
-  done:        { label: 'Done', color: 'text-emerald-400', icon: CheckCircle2, badge: 'success' },
+const STATUS_COLORS: Record<string, string> = {
+  not_started: 'text-slate-400', in_progress: 'text-blue-500',
+  review: 'text-purple-500', blocked: 'text-red-500', done: 'text-emerald-500',
 }
 
-const BOARD_COLUMNS = ['not_started', 'in_progress', 'review', 'blocked', 'done'] as const
+const STATUS_BG: Record<string, string> = {
+  not_started: 'bg-slate-400/10', in_progress: 'bg-blue-500/10',
+  review: 'bg-purple-500/10', blocked: 'bg-red-500/10', done: 'bg-emerald-500/10',
+}
 
-export default function ProjectDetailClient({ project: initialProject, currentUser, workspaceMembers }: {
-  project: any
-  currentUser: any
-  workspaceMembers: any[]
+const STATUS_ICONS: Record<string, any> = {
+  not_started: Circle, in_progress: Clock, review: CheckCheck,
+  blocked: AlertTriangle, done: CheckCircle2,
+}
+
+const PROJECT_STATUSES = ['planning', 'active', 'paused', 'completed', 'cancelled']
+
+export default function ProjectDetailClient({ project: initial, tasks, members, activity, user }: {
+  project: any; tasks: any[]; members: any[]; activity: any[]; user: any
 }) {
   const router = useRouter()
-  const [project, setProject] = useState(initialProject)
-  const [view, setView] = useState<'board' | 'list'>('board')
-
-  const tasks = project.tasks ?? []
-  const members = (project.project_members ?? []).map((pm: any) => pm.user).filter(Boolean)
+  const [project, setProject] = useState(initial)
+  const [taskList, setTaskList] = useState(tasks)
+  const [editingName, setEditingName] = useState(false)
+  const [editName, setEditName] = useState(initial.name)
+  const [saving, setSaving] = useState(false)
+  const [activeTab, setActiveTab] = useState<'tasks' | 'members' | 'activity'>('tasks')
+  const [showAddMember, setShowAddMember] = useState(false)
+  const [addingMember, setAddingMember] = useState('')
+  const [taskFilter, setTaskFilter] = useState('all')
 
   const stats = {
-    total: tasks.length,
-    done: tasks.filter((t: any) => t.status === 'done').length,
-    blocked: tasks.filter((t: any) => t.status === 'blocked').length,
-    inProgress: tasks.filter((t: any) => t.status === 'in_progress').length,
+    total: taskList.length,
+    done: taskList.filter(t => t.status === 'done').length,
+    inProgress: taskList.filter(t => t.status === 'in_progress').length,
+    blocked: taskList.filter(t => t.status === 'blocked').length,
   }
 
-  async function updateProject(updates: Record<string, any>) {
+  const progress = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0
+
+  async function saveName() {
+    if (!editName.trim()) return
+    setSaving(true)
     const res = await fetch(`/api/projects/${project.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updates),
+      body: JSON.stringify({ name: editName.trim() }),
     })
-    if (!res.ok) { toast.error('Failed to update project'); return }
-    const { project: updated } = await res.json()
-    setProject((p: any) => ({ ...p, ...updated }))
-    toast.success('Project updated')
+    if (res.ok) {
+      setProject((p: any) => ({ ...p, name: editName.trim() }))
+      toast.success('Project updated')
+    } else toast.error('Update failed')
+    setSaving(false)
+    setEditingName(false)
   }
 
-  async function deleteProject() {
-    if (!confirm('Delete this project? All tasks will be unlinked.')) return
-    await fetch(`/api/projects/${project.id}`, { method: 'DELETE' })
-    toast.success('Project deleted')
-    router.push('/projects')
+  async function updateStatus(status: string) {
+    const res = await fetch(`/api/projects/${project.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    })
+    if (res.ok) setProject((p: any) => ({ ...p, status }))
   }
+
+  async function addMember() {
+    if (!addingMember) return
+    const res = await fetch(`/api/projects/${project.id}/members`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: addingMember }),
+    })
+    if (res.ok) {
+      const member = members.find(m => m.id === addingMember)
+      if (member) {
+        setProject((p: any) => ({
+          ...p,
+          project_members: [...(p.project_members ?? []), { user_id: member.id, user: member }],
+        }))
+      }
+      setShowAddMember(false)
+      setAddingMember('')
+      toast.success('Member added')
+    }
+  }
+
+  const filteredTasks = taskFilter === 'all' ? taskList : taskList.filter(t => t.status === taskFilter)
+
+  const projectMembers = (project.project_members ?? []).map((pm: any) => pm.user).filter(Boolean)
+  const nonMembers = members.filter(m => !projectMembers.find((pm: any) => pm.id === m.id))
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 animate-fade-in">
+    <div className="max-w-6xl mx-auto animate-fade-in">
       {/* Back */}
       <Link href="/projects"
-        className="inline-flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]
-          text-sm transition group">
-        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-        All projects
+        className="inline-flex items-center gap-1.5 text-sm font-medium mb-6 transition-colors hover:opacity-80"
+        style={{ color: 'var(--text-secondary)' }}>
+        <ArrowLeft className="w-4 h-4" />
+        Projects
       </Link>
 
       {/* Project header */}
-      <div className="bg-[var(--bg-surface)]/80 border border-[var(--border)][0.06] rounded-2xl p-6">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div className="flex items-start gap-4">
-            <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center text-[var(--text-primary)]
-                font-bold text-lg shrink-0"
-              style={{ backgroundColor: project.color }}
-            >
-              {project.name.charAt(0).toUpperCase()}
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-[var(--text-primary)]">{project.name}</h1>
-              {project.description && (
-                <p className="text-[var(--text-secondary)] text-sm mt-1 max-w-xl">{project.description}</p>
-              )}
-              <div className="flex items-center gap-3 mt-2 flex-wrap">
-                <div className="relative">
-                  <select
-                    value={project.status}
-                    onChange={e => updateProject({ status: e.target.value })}
-                    className="appearance-none bg-white/[0.04] border border-[var(--border)]10 rounded-lg
-                      pl-3 pr-7 py-1.5 text-xs text-[var(--text-primary)] focus:outline-none
-                      focus:ring-2 focus:ring-indigo-500/50 cursor-pointer"
-                  >
-                    <option value="active">Active</option>
-                    <option value="paused">Paused</option>
-                    <option value="completed">Completed</option>
-                    <option value="archived">Archived</option>
-                  </select>
-                  <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-[var(--text-muted)] pointer-events-none" />
-                </div>
-                {project.end_date && (
-                  <span className="text-xs text-[var(--text-muted)] flex items-center gap-1">
-                    <Calendar className="w-3 h-3" />
-                    {formatDate(project.end_date)}
-                  </span>
-                )}
-                <AvatarGroup
-                  avatars={members.map((m: any) => ({
-                    name: m.full_name,
-                    avatarUrl: m.avatar_url,
-                    color: project.color,
-                  }))}
-                  max={5}
-                  size="xs"
+      <div className="rounded-2xl border p-6 mb-6" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+        <div className="flex items-start gap-4 flex-wrap">
+          <div className="w-14 h-14 rounded-2xl shrink-0 flex items-center justify-center text-white font-bold text-xl"
+            style={{ background: project.color ?? 'var(--primary)' }}>
+            {project.name?.charAt(0)?.toUpperCase()}
+          </div>
+
+          <div className="flex-1 min-w-0">
+            {editingName ? (
+              <div className="flex items-center gap-2 mb-2">
+                <input
+                  value={editName}
+                  onChange={e => setEditName(e.target.value)}
+                  autoFocus
+                  className="text-2xl font-bold bg-transparent border-b-2 border-indigo-500 focus:outline-none flex-1"
+                  style={{ color: 'var(--text-primary)' }}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') saveName()
+                    if (e.key === 'Escape') setEditingName(false)
+                  }}
                 />
+                <button onClick={saveName} className="p-2 rounded-lg text-emerald-500 hover:bg-emerald-500/10 transition">
+                  <Save className="w-4 h-4" />
+                </button>
+                <button onClick={() => setEditingName(false)} className="p-2 rounded-lg hover:bg-[var(--bg-elevated)] transition"
+                  style={{ color: 'var(--text-muted)' }}>
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 mb-2 group">
+                <h1 className="text-2xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
+                  {project.name}
+                </h1>
+                <button onClick={() => setEditingName(true)}
+                  className="opacity-0 group-hover:opacity-100 transition p-1.5 rounded-lg hover:bg-[var(--bg-elevated)]"
+                  style={{ color: 'var(--text-muted)' }}>
+                  <Edit3 className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            {project.description && (
+              <p className="text-sm mb-3" style={{ color: 'var(--text-secondary)' }}>{project.description}</p>
+            )}
+
+            <div className="flex items-center gap-3 flex-wrap">
+              <select
+                value={project.status}
+                onChange={e => updateStatus(e.target.value)}
+                className="text-xs font-semibold px-3 py-1.5 rounded-xl border capitalize cursor-pointer focus:outline-none"
+                style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+              >
+                {PROJECT_STATUSES.map(s => <option key={s} value={s} className="capitalize">{s}</option>)}
+              </select>
+
+              {project.end_date && (
+                <div className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--text-muted)' }}>
+                  <Calendar className="w-3.5 h-3.5" />
+                  Due {formatDate(project.end_date)}
+                </div>
+              )}
+
+              <div className="flex items-center gap-1 flex-wrap">
+                {projectMembers.slice(0, 5).map((m: any) => (
+                  <Avatar key={m.id} size="xs">
+                    {m.avatar_url
+                      ? <AvatarImage src={m.avatar_url} alt={m.full_name} />
+                      : <AvatarFallback>{getInitials(m.full_name)}</AvatarFallback>
+                    }
+                  </Avatar>
+                ))}
+                {projectMembers.length > 5 && (
+                  <span className="text-xs" style={{ color: 'var(--text-muted)' }}>+{projectMembers.length - 5}</span>
+                )}
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Link href={`/tasks/new?projectId=${project.id}`}>
-              <Button variant="primary" size="sm" icon={<Plus className="w-3.5 h-3.5" />}>
-                Add Task
-              </Button>
-            </Link>
-            <Button variant="ghost" size="sm"
-              icon={<Trash2 className="w-4 h-4 text-red-400" />}
-              onClick={deleteProject}
-              className="text-red-400 hover:bg-red-500/10"
-            />
+          {/* Progress ring */}
+          <div className="text-center shrink-0">
+            <div className="relative w-16 h-16">
+              <svg className="w-16 h-16 -rotate-90" viewBox="0 0 64 64">
+                <circle cx="32" cy="32" r="26" fill="none" stroke="var(--bg-elevated)" strokeWidth="6" />
+                <circle cx="32" cy="32" r="26" fill="none"
+                  stroke={project.color ?? 'var(--primary)'}
+                  strokeWidth="6"
+                  strokeDasharray={`${2 * Math.PI * 26}`}
+                  strokeDashoffset={`${2 * Math.PI * 26 * (1 - progress / 100)}`}
+                  strokeLinecap="round"
+                  className="transition-all duration-700"
+                />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{progress}%</span>
+              </div>
+            </div>
+            <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Complete</p>
           </div>
         </div>
 
-        {/* Stats row */}
-        <div className="grid grid-cols-4 gap-3 mt-6 pt-6 border-t border-[var(--border)][0.06]">
+        {/* Stat bar */}
+        <div className="grid grid-cols-4 gap-3 mt-5 pt-5 border-t" style={{ borderColor: 'var(--border)' }}>
           {[
-            { label: 'Total', value: stats.total, color: 'text-[var(--text-primary)]' },
-            { label: 'In Progress', value: stats.inProgress, color: 'text-blue-400' },
-            { label: 'Blocked', value: stats.blocked, color: 'text-red-400' },
-            { label: 'Done', value: stats.done, color: 'text-emerald-400' },
-          ].map(s => (
-            <div key={s.label} className="text-center">
-              <p className={cn('text-2xl font-bold', s.color)}>{s.value}</p>
-              <p className="text-xs text-[var(--text-muted)] mt-0.5">{s.label}</p>
+            { label: 'Total', value: stats.total, color: 'var(--text-primary)' },
+            { label: 'In Progress', value: stats.inProgress, color: '#3B82F6' },
+            { label: 'Blocked', value: stats.blocked, color: '#EF4444' },
+            { label: 'Done', value: stats.done, color: '#10B981' },
+          ].map(stat => (
+            <div key={stat.label} className="text-center">
+              <p className="text-2xl font-bold" style={{ color: stat.color }}>{stat.value}</p>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{stat.label}</p>
             </div>
           ))}
         </div>
-
-        {/* Progress */}
-        <div className="mt-4">
-          <div className="flex justify-between mb-1.5">
-            <span className="text-xs text-[var(--text-muted)]">Overall progress</span>
-            <span className="text-xs font-semibold text-[var(--text-primary)]">{project.progress}%</span>
-          </div>
-          <Progress value={project.progress} size="md" animated />
-        </div>
       </div>
 
-      {/* View toggle */}
-      <div className="flex items-center gap-2">
-        {(['board', 'list'] as const).map(v => (
+      {/* Tabs */}
+      <div className="flex border-b mb-5" style={{ borderColor: 'var(--border)' }}>
+        {([['tasks', 'Tasks', taskList.length], ['members', 'Members', projectMembers.length], ['activity', 'Activity', activity.length]] as const).map(([t, label, count]) => (
           <button
-            key={v}
-            onClick={() => setView(v)}
-            className={cn(
-              'px-4 py-2 rounded-xl text-sm font-medium capitalize transition-all',
-              view === v
-                ? 'bg-indigo-600 text-[var(--text-primary)]'
-                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-white/5'
-            )}
+            key={t}
+            onClick={() => setActiveTab(t as any)}
+            className="flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-all"
+            style={{
+              color: activeTab === t ? 'var(--primary)' : 'var(--text-secondary)',
+              borderBottomColor: activeTab === t ? 'var(--primary)' : 'transparent',
+            }}
           >
-            {v} view
+            {label}
+            <span className="text-xs px-1.5 py-0.5 rounded-full"
+              style={{ background: 'var(--bg-elevated)', color: 'var(--text-muted)' }}>
+              {count}
+            </span>
           </button>
         ))}
       </div>
 
-      {/* Board / List */}
-      <AnimatePresence mode="wait">
-        {view === 'board' ? (
-          <motion.div key="board" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <div className="flex gap-4 overflow-x-auto pb-4">
-              {BOARD_COLUMNS.map(col => {
-                const colTasks = tasks.filter((t: any) => t.status === col)
-                const cfg = statusConfig[col]
-                const ColIcon = cfg.icon
+      {/* Tasks tab */}
+      {activeTab === 'tasks' && (
+        <div>
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+            <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'var(--bg-elevated)' }}>
+              {['all', 'in_progress', 'blocked', 'done'].map(f => (
+                <button
+                  key={f}
+                  onClick={() => setTaskFilter(f)}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-all"
+                  style={taskFilter === f
+                    ? { background: 'var(--primary)', color: 'white' }
+                    : { color: 'var(--text-secondary)' }
+                  }
+                >
+                  {f === 'all' ? 'All' : f.replace('_', ' ')}
+                </button>
+              ))}
+            </div>
+            <Link
+              href={`/tasks/new?project=${project.id}`}
+              className="flex items-center gap-1.5 text-sm font-semibold px-3 py-2 rounded-xl text-white transition hover:opacity-90"
+              style={{ background: 'var(--primary)' }}
+            >
+              <Plus className="w-4 h-4" />
+              Add task
+            </Link>
+          </div>
+
+          {filteredTasks.length === 0 ? (
+            <div className="text-center py-16 rounded-2xl border" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+              <CheckCircle2 className="w-10 h-10 mx-auto mb-3" style={{ color: 'var(--text-muted)' }} />
+              <p className="font-medium mb-1" style={{ color: 'var(--text-primary)' }}>No tasks {taskFilter !== 'all' ? `with status "${taskFilter.replace('_', ' ')}"` : 'in this project'}</p>
+              <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>Create the first task to start tracking work.</p>
+              <Link href={`/tasks/new?project=${project.id}`}
+                className="inline-flex items-center gap-1.5 text-sm font-semibold px-4 py-2 rounded-xl text-white"
+                style={{ background: 'var(--primary)' }}>
+                <Plus className="w-4 h-4" />
+                Create task
+              </Link>
+            </div>
+          ) : (
+            <motion.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-2">
+              {filteredTasks.map(task => {
+                const StatusIcon = STATUS_ICONS[task.status] ?? Circle
                 return (
-                  <div key={col} className="flex-shrink-0 w-72">
-                    <div className="flex items-center gap-2 mb-3 px-1">
-                      <ColIcon className={cn('w-4 h-4', cfg.color)} />
-                      <span className="text-sm font-medium text-slate-300">{cfg.label}</span>
-                      <span className="ml-auto text-xs text-[var(--text-muted)] bg-white/5
-                        px-2 py-0.5 rounded-full">
-                        {colTasks.length}
-                      </span>
-                    </div>
-                    <div className="space-y-2">
-                      {colTasks.map((task: any, i: number) => (
-                        <motion.div
-                          key={task.id}
-                          variants={staggerItem}
-                          initial="initial"
-                          animate="animate"
-                          style={{ animationDelay: `${i * 40}ms` }}
-                        >
-                          <Link href={`/tasks/${task.id}`}>
-                            <div className={cn(
-                              'p-4 rounded-xl cursor-pointer group',
-                              'bg-[var(--bg-surface)]/80 border border-[var(--border)][0.06]',
-                              'hover:border-indigo-500/30 hover:shadow-lg hover:shadow-indigo-500/5',
-                              'transition-all duration-200',
-                              task.status === 'blocked' && 'border-red-500/20'
-                            )}>
-                              <p className={cn(
-                                'text-sm font-medium leading-snug mb-2',
-                                task.status === 'done' ? 'text-[var(--text-muted)] line-through' : 'text-slate-200'
-                              )}>
-                                {task.title}
-                              </p>
-                              {task.blocker_reason && (
-                                <div className="flex items-center gap-1.5 mb-2 text-xs
-                                  text-red-400 bg-red-500/10 px-2 py-1.5 rounded-lg">
-                                  <AlertTriangle className="w-3 h-3 shrink-0" />
-                                  <span className="truncate">{task.blocker_reason}</span>
-                                </div>
-                              )}
-                              <div className="flex items-center justify-between">
-                                {task.due_date && (
-                                  <span className={cn(
-                                    'text-xs',
-                                    new Date(task.due_date) < new Date() && task.status !== 'done'
-                                      ? 'text-red-400'
-                                      : 'text-slate-600'
-                                  )}>
-                                    {formatDate(task.due_date)}
-                                  </span>
-                                )}
-                                {task.assignee && (
-                                  <Avatar size="xs" className="ml-auto">
-                                    {task.assignee.avatar_url
-                                      ? <AvatarImage src={task.assignee.avatar_url} alt={task.assignee.full_name} />
-                                      : <AvatarFallback>{getInitials(task.assignee.full_name)}</AvatarFallback>
-                                    }
-                                  </Avatar>
-                                )}
-                              </div>
-                            </div>
-                          </Link>
-                        </motion.div>
-                      ))}
-                      {colTasks.length === 0 && (
-                        <div className="h-20 rounded-xl border border-dashed border-[var(--border)][0.06]
-                          flex items-center justify-center">
-                          <p className="text-xs text-slate-700">No tasks</p>
+                  <motion.div key={task.id} variants={staggerItem}>
+                    <Link href={`/tasks/${task.id}`}>
+                      <div className="group flex items-center gap-4 p-4 rounded-2xl border transition-all hover:shadow-sm hover:-translate-y-0.5"
+                        style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+                        <div className={cn('p-1.5 rounded-lg shrink-0', STATUS_BG[task.status])}>
+                          <StatusIcon className={cn('w-4 h-4', STATUS_COLORS[task.status])} />
                         </div>
-                      )}
-                    </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={cn('text-sm font-medium truncate', task.status === 'done' && 'line-through opacity-60')}
+                            style={{ color: 'var(--text-primary)' }}>
+                            {task.title}
+                          </p>
+                          {task.due_date && (
+                            <p className={cn('text-xs mt-0.5', new Date(task.due_date) < new Date() && task.status !== 'done' ? 'text-red-500' : '')}
+                              style={new Date(task.due_date) >= new Date() || task.status === 'done' ? { color: 'var(--text-muted)' } : undefined}>
+                              Due {formatDate(task.due_date)}
+                            </p>
+                          )}
+                        </div>
+                        {task.assignee && (
+                          <Avatar size="xs" className="shrink-0">
+                            {task.assignee.avatar_url
+                              ? <AvatarImage src={task.assignee.avatar_url} alt={task.assignee.full_name} />
+                              : <AvatarFallback>{getInitials(task.assignee.full_name)}</AvatarFallback>
+                            }
+                          </Avatar>
+                        )}
+                        <ArrowLeft className="w-4 h-4 rotate-180 opacity-0 group-hover:opacity-100 transition shrink-0"
+                          style={{ color: 'var(--text-muted)' }} />
+                      </div>
+                    </Link>
+                  </motion.div>
+                )
+              })}
+            </motion.div>
+          )}
+        </div>
+      )}
+
+      {/* Members tab */}
+      {activeTab === 'members' && (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{projectMembers.length} member{projectMembers.length !== 1 ? 's' : ''}</p>
+            {user.roleLevel <= 2 && (
+              <button
+                onClick={() => setShowAddMember(!showAddMember)}
+                className="flex items-center gap-1.5 text-sm font-semibold px-3 py-2 rounded-xl text-white"
+                style={{ background: 'var(--primary)' }}
+              >
+                <Plus className="w-4 h-4" />
+                Add member
+              </button>
+            )}
+          </div>
+
+          {showAddMember && nonMembers.length > 0 && (
+            <div className="flex gap-2 mb-4">
+              <select value={addingMember} onChange={e => setAddingMember(e.target.value)}
+                className="flex-1 rounded-xl border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}>
+                <option value="">Select team member</option>
+                {nonMembers.map(m => <option key={m.id} value={m.id}>{m.full_name}</option>)}
+              </select>
+              <button onClick={addMember} className="px-4 rounded-xl text-white font-semibold text-sm"
+                style={{ background: 'var(--primary)' }}>
+                Add
+              </button>
+            </div>
+          )}
+
+          <motion.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-2">
+            {projectMembers.map((m: any) => (
+              <motion.div key={m.id} variants={staggerItem}>
+                <div className="flex items-center gap-3 p-4 rounded-2xl border"
+                  style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+                  <Avatar size="md">
+                    {m.avatar_url
+                      ? <AvatarImage src={m.avatar_url} alt={m.full_name} />
+                      : <AvatarFallback>{getInitials(m.full_name)}</AvatarFallback>
+                    }
+                  </Avatar>
+                  <div>
+                    <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{m.full_name}</p>
+                    {m.job_title && <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{m.job_title}</p>}
                   </div>
-                )
-              })}
-            </div>
-          </motion.div>
-        ) : (
-          <motion.div key="list" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <div className="space-y-1.5">
-              {tasks.length === 0 ? (
-                <div className="text-center py-16">
-                  <p className="text-[var(--text-muted)]">No tasks yet</p>
-                  <Link href={`/tasks/new?projectId=${project.id}`}>
-                    <Button variant="secondary" size="sm" className="mt-3"
-                      icon={<Plus className="w-3.5 h-3.5" />}>
-                      Add first task
-                    </Button>
-                  </Link>
+                  <div className="ml-auto">
+                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                      {taskList.filter(t => t.assigned_to === m.id).length} tasks
+                    </p>
+                  </div>
                 </div>
-              ) : tasks.map((task: any) => {
-                const cfg = statusConfig[task.status] ?? statusConfig.not_started
-                const TaskIcon = cfg.icon
-                return (
-                  <Link key={task.id} href={`/tasks/${task.id}`}>
-                    <div className="flex items-center gap-3 px-4 py-3 rounded-xl
-                      bg-white/[0.02] border border-transparent
-                      hover:bg-white/[0.05] hover:border-[var(--border)][0.08] transition-all group">
-                      <TaskIcon className={cn('w-4 h-4 shrink-0', cfg.color)} />
-                      <span className={cn(
-                        'flex-1 text-sm truncate',
-                        task.status === 'done' ? 'text-[var(--text-muted)] line-through' : 'text-slate-300 group-hover:text-[var(--text-primary)]'
-                      )}>
-                        {task.title}
-                      </span>
-                      {task.due_date && (
-                        <span className={cn(
-                          'text-xs shrink-0',
-                          new Date(task.due_date) < new Date() && task.status !== 'done'
-                            ? 'text-red-400' : 'text-slate-600'
-                        )}>
-                          {formatDate(task.due_date)}
-                        </span>
-                      )}
-                      {task.assignee && (
-                        <Avatar size="xs">
-                          {task.assignee.avatar_url
-                            ? <AvatarImage src={task.assignee.avatar_url} alt={task.assignee.full_name} />
-                            : <AvatarFallback>{getInitials(task.assignee.full_name)}</AvatarFallback>
-                          }
-                        </Avatar>
-                      )}
-                    </div>
-                  </Link>
-                )
-              })}
-            </div>
+              </motion.div>
+            ))}
           </motion.div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
+
+      {/* Activity tab */}
+      {activeTab === 'activity' && (
+        <div className="space-y-3">
+          {activity.length === 0 ? (
+            <div className="text-center py-16 rounded-2xl border" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+              <Activity className="w-10 h-10 mx-auto mb-3" style={{ color: 'var(--text-muted)' }} />
+              <p className="font-medium" style={{ color: 'var(--text-primary)' }}>No activity yet</p>
+            </div>
+          ) : (
+            activity.map((log: any) => (
+              <div key={log.id} className="flex items-start gap-3 p-4 rounded-2xl border"
+                style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+                <Avatar size="xs" className="shrink-0 mt-0.5">
+                  {log.user?.avatar_url
+                    ? <AvatarImage src={log.user.avatar_url} alt={log.user.full_name} />
+                    : <AvatarFallback>{getInitials(log.user?.full_name ?? '?')}</AvatarFallback>
+                  }
+                </Avatar>
+                <div>
+                  <p className="text-sm" style={{ color: 'var(--text-primary)' }}>
+                    <strong>{log.user?.full_name}</strong>{' '}
+                    {log.action.replace(/_/g, ' ')}
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                    {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
+                  </p>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
     </div>
   )
 }

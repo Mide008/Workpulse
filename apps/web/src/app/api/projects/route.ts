@@ -1,5 +1,9 @@
+// apps/web/src/app/api/projects/route.ts
+export const dynamic = 'force-dynamic'
+
 import { withAuth } from '@/lib/api-guard'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { logActivity } from '@/lib/activity'
 import { z } from 'zod'
 import type { NextRequest } from 'next/server'
 
@@ -59,8 +63,8 @@ export const POST = withAuth(
         start_date: d.startDate,
         end_date: d.endDate,
         team_id: d.teamId,
-      } as any) // cast to bypass generated type limitations
-      .select('id, name, color, status')
+      } as any)
+      .select('id, name, color, status, created_by')
       .single()
 
     if (error) throw error
@@ -75,15 +79,22 @@ export const POST = withAuth(
     }
     await supabase.from('project_members').insert(memberInserts as any)
 
-    // Log activity – use any because activity_logs might be missing in generated types
-        await (supabase as any).from('activity_logs').insert({
-      workspace_id: ctx.workspaceId,
-      user_id: ctx.userId,
-      entity_type: 'project',
-      entity_id: pid,
-      action: 'created',
-      new_value: { name: d.name },
-    } as any)
+    // Log activity using the centralized logger
+    await logActivity({
+      workspaceId: ctx.workspaceId,
+      userId: ctx.userId,
+      entityType: 'project',
+      entityId: pid,
+      entityTitle: (project as any).name,
+      action: 'project_created',
+      metadata: {
+        priority: d.priority,
+        memberCount: memberInserts.length,
+        actorName: ctx.userFullName,
+      },
+      // Notify all members except the creator
+      notifyUserIds: d.memberIds?.filter(id => id !== ctx.userId) ?? [],
+    })
 
     return Response.json({ project }, { status: 201 })
   },

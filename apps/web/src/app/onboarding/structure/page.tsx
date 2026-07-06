@@ -1,21 +1,16 @@
+// app/onboarding/structure/page.tsx
 'use client'
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useForm } from 'react-hook-form'
 import { Plus, Trash2, Loader2, ArrowRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout'
+import { AuthButton } from '@/components/auth/AuthButton'
 
-interface Department {
-  name: string
-  id?: string
-}
-
-interface Team {
-  name: string
-  departmentIndex: number
-}
+interface Department { name: string; id?: string }
+interface Team { name: string; departmentIndex: number }
 
 export default function StructurePage() {
   const router = useRouter()
@@ -27,22 +22,18 @@ export default function StructurePage() {
   function addDepartment() {
     setDepartments([...departments, { name: '' }])
   }
-
   function removeDepartment(index: number) {
     setDepartments(departments.filter((_, i) => i !== index))
     setTeams(teams.filter((t) => t.departmentIndex !== index))
   }
-
   function updateDepartment(index: number, name: string) {
     const updated = [...departments]
     updated[index].name = name
     setDepartments(updated)
   }
-
   function addTeam() {
     setTeams([...teams, { name: '', departmentIndex: 0 }])
   }
-
   function removeTeam(index: number) {
     setTeams(teams.filter((_, i) => i !== index))
   }
@@ -56,9 +47,7 @@ export default function StructurePage() {
 
     setSaving(true)
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
+      const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Not authenticated')
 
       const { data: profile } = await supabase
@@ -70,7 +59,6 @@ export default function StructurePage() {
       const workspaceId = (profile as { workspace_id: string } | null)?.workspace_id
       if (!workspaceId) throw new Error('No workspace found')
 
-      // Insert departments
       const { data: createdDepts } = await supabase
         .from('departments')
         .insert(validDepts.map((d) => ({ name: d.name, workspace_id: workspaceId })))
@@ -80,7 +68,6 @@ export default function StructurePage() {
         (createdDepts as { id: string; name: string }[] | null)?.map((d, i) => [i, d.id]) ?? []
       )
 
-      // Insert teams
       const validTeams = teams.filter((t) => t.name.trim())
       if (validTeams.length > 0) {
         await supabase.from('teams').insert(
@@ -103,23 +90,22 @@ export default function StructurePage() {
   }
 
   return (
-    <>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[var(--text-primary)]">Set up your structure</h1>
-        <p className="text-[var(--text-secondary)] mt-1">
+    <OnboardingLayout>
+      <div className="mb-6">
+        <h1 className="text-xl font-bold text-[var(--text-primary)]">Set up your structure</h1>
+        <p className="text-[var(--text-secondary)] text-sm mt-1">
           Add departments and teams. You can always add more later.
         </p>
       </div>
 
-      <div className="space-y-8">
+      <div className="space-y-6">
         {/* Departments */}
         <div>
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-2">
             <h2 className="text-[var(--text-primary)] font-semibold">Departments</h2>
             <button
               onClick={addDepartment}
-              className="flex items-center gap-1.5 text-sm text-indigo-400
-                hover:text-indigo-300 transition"
+              className="flex items-center gap-1.5 text-sm text-[var(--primary)] hover:opacity-80 transition"
             >
               <Plus className="w-4 h-4" />
               Add department
@@ -132,9 +118,9 @@ export default function StructurePage() {
                   value={dept.name}
                   onChange={(e) => updateDepartment(i, e.target.value)}
                   placeholder={`e.g. ${['Sales', 'Operations', 'Technology', 'Finance'][i % 4]}`}
-                  className="flex-1 bg-white/5 border border-[var(--border)]10 rounded-xl px-4 py-2.5
-                    text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2
-                    focus:ring-indigo-500 transition text-sm"
+                  className="flex-1 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-xl px-4 py-2.5
+                    text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none
+                    focus:ring-2 focus:ring-[var(--primary)]/50 transition text-sm"
                 />
                 {departments.length > 1 && (
                   <button
@@ -151,12 +137,11 @@ export default function StructurePage() {
 
         {/* Teams */}
         <div>
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-2">
             <h2 className="text-[var(--text-primary)] font-semibold">Teams</h2>
             <button
               onClick={addTeam}
-              className="flex items-center gap-1.5 text-sm text-indigo-400
-                hover:text-indigo-300 transition"
+              className="flex items-center gap-1.5 text-sm text-[var(--primary)] hover:opacity-80 transition"
             >
               <Plus className="w-4 h-4" />
               Add team
@@ -173,9 +158,9 @@ export default function StructurePage() {
                     setTeams(updated)
                   }}
                   placeholder="e.g. Frontend, Lettings, Claims"
-                  className="flex-1 bg-white/5 border border-[var(--border)]10 rounded-xl px-4 py-2.5
-                    text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2
-                    focus:ring-indigo-500 transition text-sm"
+                  className="flex-1 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-xl px-4 py-2.5
+                    text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none
+                    focus:ring-2 focus:ring-[var(--primary)]/50 transition text-sm"
                 />
                 <select
                   value={team.departmentIndex}
@@ -184,8 +169,8 @@ export default function StructurePage() {
                     updated[i].departmentIndex = Number(e.target.value)
                     setTeams(updated)
                   }}
-                  className="bg-[var(--bg-elevated)] border border-[var(--border)]10 rounded-xl px-3 py-2.5
-                    text-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="bg-[var(--bg-elevated)] border border-[var(--border)] rounded-xl px-3 py-2.5
+                    text-[var(--text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/50"
                 >
                   {departments.map((d, di) => (
                     <option key={di} value={di}>
@@ -209,27 +194,21 @@ export default function StructurePage() {
         <div className="flex gap-3">
           <button
             onClick={() => router.push('/onboarding/invite')}
-            className="flex-1 border border-[var(--border)]10 text-[var(--text-secondary)] hover:text-[var(--text-primary)]
-              hover:border-[var(--border)]30 font-medium py-3 rounded-xl transition text-sm"
+            className="flex-1 border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]
+              hover:border-[var(--border-strong)] font-medium py-2.5 rounded-xl transition text-sm"
           >
             Skip for now
           </button>
-          <button
+          <AuthButton
+            variant="primary"
+            className="flex-1"
             onClick={handleSave}
-            disabled={saving}
-            className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50
-              text-[var(--text-primary)] font-semibold py-3 rounded-xl transition
-              flex items-center justify-center gap-2"
+            loading={saving}
           >
-            {saving ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <ArrowRight className="w-4 h-4" />
-            )}
             {saving ? 'Saving...' : 'Continue'}
-          </button>
+          </AuthButton>
         </div>
       </div>
-    </>
+    </OnboardingLayout>
   )
 }

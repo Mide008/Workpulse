@@ -1,3 +1,4 @@
+// apps/web/src/app/(app)/tasks/new/new-task-client.tsx
 'use client'
 
 import { useState } from 'react'
@@ -12,6 +13,8 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { fadeInUp } from '@/lib/motion'
+import TemplatePicker from '@/components/tasks/template-picker'
+import { TASK_TEMPLATES } from '@/lib/task-templates'
 
 const schema = z.object({
   title: z.string().min(1, 'Title is required').max(500),
@@ -60,6 +63,26 @@ export default function NewTaskClient({ projects, members, currentUserId }: {
     defaultValues: { priority: 'medium', status: 'not_started', assignedTo: currentUserId },
   })
 
+  // Template application
+  function applyTemplate(template: any) {
+    setValue('title', template.defaults.title)
+    setValue('description', template.defaults.description)
+    setValue('priority', template.defaults.priority)
+    if (template.defaults.estimatedHours) {
+      setValue('estimatedHours', String(template.defaults.estimatedHours))
+    }
+    if (template.defaults.category) {
+      setValue('category', template.defaults.category)
+    }
+    if (template.defaults.tags) {
+      setValue('tags', template.defaults.tags.join(', '))
+    }
+    // Automatically set status to 'not_started' (default)
+    setValue('status', 'not_started')
+    // Keep assignedTo as currentUserId (default)
+    toast.success(`Template "${template.name}" applied`)
+  }
+
   async function onSubmit(data: FormData) {
     const res = await fetch('/api/tasks', {
       method: 'POST',
@@ -98,9 +121,14 @@ export default function NewTaskClient({ projects, members, currentUserId }: {
       </Link>
 
       <motion.div {...fadeInUp}>
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-[var(--text-primary)]">Create new task</h1>
-          <p className="text-[var(--text-secondary)] text-sm mt-1">Add details to help your team understand the work</p>
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">Create new task</h1>
+            <p className="text-[var(--text-secondary)] text-sm mt-0.5">
+              Create a task manually or start from a template.
+            </p>
+          </div>
+          <TemplatePicker onSelect={applyTemplate} />
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">

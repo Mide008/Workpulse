@@ -16,6 +16,8 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { staggerItem } from '@/lib/motion'
 import { ToggleButton } from '@/components/ui/toggle-button'
+import { EmptyState } from '@/components/ui/empty-state'
+import { toast } from 'sonner'
 
 // ---------- dnd‑kit imports ----------
 import {
@@ -122,6 +124,58 @@ export default function TasksClient({ initialTasks, projects, members, currentUs
   const [sortBy, setSortBy] = useState<SortKey>('created_at')
   const [showFilters, setShowFilters] = useState(false)
 
+  // ---------- Bulk selection ----------
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [bulkLoading, setBulkLoading] = useState(false)
+
+  function toggleSelect(id: string) {
+    setSelected(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function selectAll() {
+    if (selected.size === filteredTasks.length) {
+      setSelected(new Set())
+    } else {
+      setSelected(new Set(filteredTasks.map((t: any) => t.id)))
+    }
+  }
+
+  async function bulkUpdateStatus(status: string) {
+    setBulkLoading(true)
+    await Promise.allSettled(
+      Array.from(selected).map(id =>
+        fetch(`/api/tasks/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status }),
+        })
+      )
+    )
+    setTasks(prev => prev.map((t: any) => selected.has(t.id) ? { ...t, status } : t))
+    setSelected(new Set())
+    toast.success(`${selected.size} task${selected.size > 1 ? 's' : ''} updated`)
+    setBulkLoading(false)
+  }
+
+  async function bulkDelete() {
+    if (!confirm(`Delete ${selected.size} task${selected.size > 1 ? 's' : ''}? This cannot be undone.`)) return
+    setBulkLoading(true)
+    await Promise.allSettled(
+      Array.from(selected).map(id =>
+        fetch(`/api/tasks/${id}`, { method: 'DELETE' })
+      )
+    )
+    setTasks(prev => prev.filter((t: any) => !selected.has(t.id)))
+    setSelected(new Set())
+    toast.success('Tasks deleted')
+    setBulkLoading(false)
+  }
+
   // ---------- dnd‑kit sensors ----------
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
   const [activeTask, setActiveTask] = useState<Task | null>(null)
@@ -149,7 +203,7 @@ export default function TasksClient({ initialTasks, projects, members, currentUs
   }
 
   // ---------- Filtering & sorting ----------
-  const filtered = useMemo(() => {
+  const filteredTasks = useMemo(() => {
     let result = tasks.filter(t => {
       const matchSearch = !search || t.title.toLowerCase().includes(search.toLowerCase())
       const matchStatus = filterStatus === 'all' || t.status === filterStatus
@@ -218,7 +272,7 @@ export default function TasksClient({ initialTasks, projects, members, currentUs
         </div>
 
         <Button
-          variant={showFilters ? 'secondary' : 'ghost'}  // CHANGED: 'outline' -> 'ghost'
+          variant={showFilters ? 'secondary' : 'ghost'}
           size="md"
           onClick={() => setShowFilters(!showFilters)}
           icon={<SlidersHorizontal className="w-4 h-4" />}
@@ -323,15 +377,67 @@ export default function TasksClient({ initialTasks, projects, members, currentUs
         )}
       </AnimatePresence>
 
+      {/* Bulk action bar */}
+      <AnimatePresence>
+        {selected.size > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 16 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 px-4 py-3 rounded-2xl border shadow-2xl"
+            style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}
+          >
+            <span className="text-sm font-semibold px-2" style={{ color: 'var(--text-primary)' }}>
+              {selected.size} selected
+            </span>
+            <div className="w-px h-5" style={{ background: 'var(--border)' }} />
+            {[
+              { label: 'Mark done', status: 'done', color: 'text-emerald-500' },
+              { label: 'In progress', status: 'in_progress', color: 'text-blue-500' },
+              { label: 'Blocked', status: 'blocked', color: 'text-red-500' },
+            ].map(opt => (
+              <button
+                key={opt.status}
+                onClick={() => bulkUpdateStatus(opt.status)}
+                disabled={bulkLoading}
+                className={`text-xs font-semibold px-3 py-2 rounded-xl border transition hover:opacity-80 disabled:opacity-50 ${opt.color}`}
+                style={{ borderColor: 'var(--border)', background: 'var(--bg-elevated)' }}
+              >
+                {opt.label}
+              </button>
+            ))}
+            <button
+              onClick={bulkDelete}
+              disabled={bulkLoading}
+              className="text-xs font-semibold px-3 py-2 rounded-xl bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20 transition disabled:opacity-50"
+            >
+              Delete
+            </button>
+            <button
+              onClick={() => setSelected(new Set())}
+              className="p-1.5 rounded-lg hover:bg-[var(--bg-elevated)] transition"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Content */}
       <AnimatePresence mode="wait">
         {view === 'list' ? (
           <motion.div key="list" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <TaskListView tasks={filtered} />
+            <TaskListView
+              tasks={filteredTasks}
+              selected={selected}
+              toggleSelect={toggleSelect}
+              selectAll={selectAll}
+            />
           </motion.div>
         ) : (
           <motion.div key="board" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <TaskBoardView tasks={filtered} sensors={sensors} onDragEnd={handleDragEnd} />
+            <TaskBoardView tasks={filteredTasks} sensors={sensors} onDragEnd={handleDragEnd} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -340,50 +446,95 @@ export default function TasksClient({ initialTasks, projects, members, currentUs
 }
 
 // ---------- List view ----------
-function TaskListView({ tasks }: { tasks: Task[] }) {
+function TaskListView({
+  tasks,
+  selected,
+  toggleSelect,
+  selectAll,
+}: {
+  tasks: Task[]
+  selected: Set<string>
+  toggleSelect: (id: string) => void
+  selectAll: () => void
+}) {
   if (tasks.length === 0) {
     return (
-      <div className="text-center py-24 animate-fade-in">
-        <div className="w-16 h-16 rounded-2xl bg-white/[0.04] border border-[var(--border)][0.06]
-          flex items-center justify-center mx-auto mb-4">
-          <CheckCircle2 className="w-7 h-7 text-slate-600" />
-        </div>
-        <p className="text-[var(--text-secondary)] font-medium">No tasks found</p>
-        <p className="text-slate-600 text-sm mt-1">Try adjusting your filters or create a new task</p>
-        <Link href="/tasks/new">
-          <Button variant="secondary" size="sm" className="mt-4" icon={<Plus className="w-3.5 h-3.5" />}>
-            New Task
-          </Button>
-        </Link>
-      </div>
+      <EmptyState
+        icon={<CheckCircle2 className="w-7 h-7" />}
+        title="No tasks yet"
+        description="Tasks are the heartbeat of WorkPulse. Create your first task to start tracking work, assigning it to team members, and generating KPI scores."
+        action={{ label: 'Create first task', href: '/tasks/new' }}
+        secondaryAction={{ label: 'Import from CSV', href: '/tasks?import=1' }}
+      />
     )
   }
 
   return (
     <div className="space-y-1.5">
+      {/* Header row with select-all checkbox */}
+      <div className="flex items-center px-4 py-2 text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
+        <input
+          type="checkbox"
+          checked={selected.size === tasks.length && tasks.length > 0}
+          onChange={selectAll}
+          className="w-4 h-4 rounded border cursor-pointer shrink-0 mr-3"
+          style={{ accentColor: 'var(--primary)' }}
+        />
+        <span className="flex-1">Title</span>
+        <span className="w-24 text-right">Progress</span>
+        <span className="w-24 text-right">Due date</span>
+        <span className="w-20 text-right">Assignee</span>
+      </div>
+
       {tasks.map((task, i) => (
         <motion.div key={task.id} variants={staggerItem} initial="initial" animate="animate"
           style={{ animationDelay: `${i * 40}ms` }}>
-          <Link href={`/tasks/${task.id}`}><TaskListRow task={task} /></Link>
+          <Link href={`/tasks/${task.id}`}>
+            <TaskListRow
+              task={task}
+              selected={selected.has(task.id)}
+              toggleSelect={() => toggleSelect(task.id)}
+            />
+          </Link>
         </motion.div>
       ))}
     </div>
   )
 }
 
-function TaskListRow({ task }: { task: Task }) {
+function TaskListRow({
+  task,
+  selected,
+  toggleSelect,
+}: {
+  task: Task
+  selected: boolean
+  toggleSelect: () => void
+}) {
   const priority = priorityConfig[task.priority]
   const status = statusConfig[task.status]
   const StatusIcon = status?.icon ?? Circle
   const isOverdue = task.due_date && new Date(task.due_date) < new Date() && task.status !== 'done'
 
   return (
-    <div className={cn(
-      'group flex items-center gap-4 px-4 py-3.5 rounded-xl',
-      'bg-white/[0.02] border border-transparent',
-      'hover:bg-white/[0.05] hover:border-[var(--border)][0.08] transition-all duration-200 cursor-pointer',
-      task.status === 'blocked' && 'border-red-500/10 bg-red-500/[0.02]'
-    )}>
+    <div
+      className={cn(
+        'group flex items-center gap-3 px-4 py-3 rounded-xl transition-all',
+        'bg-white/[0.02] border border-transparent',
+        'hover:bg-white/[0.05] hover:border-[var(--border)][0.08] cursor-pointer',
+        task.status === 'blocked' && 'border-red-500/10 bg-red-500/[0.02]'
+      )}
+    >
+      {/* Checkbox */}
+      <input
+        type="checkbox"
+        checked={selected}
+        onChange={toggleSelect}
+        onClick={e => e.stopPropagation()}
+        className="w-4 h-4 rounded border cursor-pointer accent-indigo-600 shrink-0 mr-1"
+        style={{ accentColor: 'var(--primary)' }}
+      />
+
       <Tooltip>
         <TooltipTrigger>
           <div className={cn('w-2.5 h-2.5 rounded-full shrink-0 transition-transform group-hover:scale-110', priority?.dot ?? 'bg-slate-400')} />

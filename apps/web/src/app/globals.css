@@ -320,3 +320,25 @@ html {
 [data-theme="light"] .placeholder\:text-slate-600::placeholder {
   color: var(--text-muted) !important;
 }
+
+/* Force better contrast on auth and onboarding panels */
+[data-theme="dark"] .auth-panel-text {
+  color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .auth-panel-subtext {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .auth-panel-stat {
+  color: #a5b4fc !important;
+}
+
+/* Onboarding step text */
+[data-theme="dark"] .onboarding-step-label {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .onboarding-step-active {
+  color: #818cf8 !important;
+}

@@ -16,6 +16,7 @@ import { Progress } from '@/components/ui/progress'
 import { Button } from '@/components/ui/button'
 import { scaleIn, staggerItem } from '@/lib/motion'
 import { ToggleButton } from '@/components/ui/toggle-button'
+import { EmptyState } from '@/components/ui/empty-state'
 
 const inviteSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -162,10 +163,12 @@ export default function TeamClient({
       </div>
 
       {filtered.length === 0 ? (
-        <div className="text-center py-24">
-          <Users className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-          <p className="text-[var(--text-secondary)]">No team members found</p>
-        </div>
+        <EmptyState
+          icon={<Users className="w-7 h-7" />}
+          title="Your team is empty"
+          description="Invite colleagues to your workspace so they can log tasks, track goals, and contribute to your team's KPI scores."
+          action={{ label: 'Invite team member', href: '/settings/workspace' }}
+        />
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filtered.map((member, i) => {

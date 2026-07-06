@@ -1,3 +1,4 @@
+// apps/web/src/app/(app)/dashboard/dashboard-client.tsx
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
@@ -6,11 +7,13 @@ import { motion } from 'framer-motion'
 import {
   CheckSquare, Clock, AlertTriangle, TrendingUp,
   Plus, FolderKanban, Target, ArrowRight,
-  BarChart3, Users, Zap, Calendar,
+  BarChart3, Users, Zap, Calendar, Activity,
 } from 'lucide-react'
 import { cn, formatDate } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
+import { formatDistanceToNow } from 'date-fns'
+import OnboardingChecklist from '@/components/dashboard/onboarding-checklist'
 
 function getGreeting() {
   const h = new Date().getHours()
@@ -46,21 +49,40 @@ const stagger = {
   },
 }
 
-export default function DashboardClient({ user }: { user: any }) {
+export default function DashboardClient({
+  user,
+  workspaceId,
+  onboardingCompleted,
+  onboardingSteps,
+}: {
+  user: any
+  workspaceId: string
+  onboardingCompleted: boolean
+  onboardingSteps: Record<string, boolean>
+}) {
   const [tasks, setTasks] = useState<any[]>([])
   const [projects, setProjects] = useState<any[]>([])
+  const [activity, setActivity] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   const fetchData = useCallback(async () => {
     try {
-      const [tr, pr] = await Promise.allSettled([fetch('/api/tasks'), fetch('/api/projects')])
-      if (tr.status === 'fulfilled' && tr.value.ok) {
-        const { tasks: t } = await tr.value.json()
+      const [tr, pr, ar] = await Promise.allSettled([
+        fetch('/api/tasks'),
+        fetch('/api/projects'),
+        fetch('/api/activity?limit=10'),
+      ])
+      if (tr.status === 'fulfilled' && (tr as any).value.ok) {
+        const { tasks: t } = await (tr as any).value.json()
         setTasks(t ?? [])
       }
-      if (pr.status === 'fulfilled' && pr.value.ok) {
-        const { projects: p } = await pr.value.json()
+      if (pr.status === 'fulfilled' && (pr as any).value.ok) {
+        const { projects: p } = await (pr as any).value.json()
         setProjects(p ?? [])
+      }
+      if (ar.status === 'fulfilled' && (ar as any).value.ok) {
+        const { activity: a } = await (ar as any).value.json()
+        setActivity(a ?? [])
       }
     } catch (error) {
       console.error('Failed fetching data stream:', error)
@@ -86,6 +108,11 @@ export default function DashboardClient({ user }: { user: any }) {
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 animate-fade-in">
+      {/* Onboarding Checklist */}
+      {!onboardingCompleted && (
+        <OnboardingChecklist workspaceId={workspaceId} steps={onboardingSteps} />
+      )}
+
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
@@ -351,6 +378,34 @@ export default function DashboardClient({ user }: { user: any }) {
               ))}
             </div>
           </div>
+
+          {/* Activity Feed */}
+          {isManager && activity.length > 0 && (
+            <div className="rounded-2xl border" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+              <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
+                <h2 className="font-semibold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+                  <Activity className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+                  Recent Activity
+                </h2>
+              </div>
+              <div className="p-4 space-y-3">
+                {activity.slice(0, 8).map((log: any) => (
+                  <div key={log.id} className="flex items-start gap-3">
+                    <div className="w-2 h-2 rounded-full mt-2 shrink-0" style={{ background: 'var(--primary)' }} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                        <strong style={{ color: 'var(--text-primary)' }}>{log.user?.full_name}</strong>
+                        {' '}{log.action.replace(/_/g, ' ')}{log.entity_title ? ` "${log.entity_title}"` : ''}
+                      </p>
+                      <p className="text-[10px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                        {formatDistanceToNow(new Date(log.created_at), { addSuffix: true })}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

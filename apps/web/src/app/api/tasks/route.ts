@@ -1,5 +1,7 @@
+// apps/web/src/app/api/tasks/route.ts
 import { withAuth } from '@/lib/api-guard'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { logActivity } from '@/lib/activity'
 import { z } from 'zod'
 import type { NextRequest } from 'next/server'
 
@@ -47,6 +49,7 @@ export const GET = withAuth(async (req: NextRequest, ctx) => {
   if (projectId) query = query.eq('project_id', projectId)
   if (search) query = query.ilike('title', `%${search}%`)
 
+  // Role‑based access: users above level 2 can only see their own tasks
   if (ctx.roleLevel > 2) {
     query = query.eq('assigned_to', ctx.userId)
   }
@@ -84,20 +87,44 @@ export const POST = withAuth(
         category: d.category,
         tags: d.tags ?? [],
       })
-      .select('id, title, status, priority, created_at')
+      .select('id, title, status, priority, created_at, assigned_to')
       .single()
 
     if (error) throw error
 
-    // Cast the entire client to any so activity_logs (which isn't in the generated types) is accepted
-    await (supabase as any).from('activity_logs').insert({
-      workspace_id: ctx.workspaceId,
-      user_id: ctx.userId,
-      entity_type: 'task',
-      entity_id: (task as any).id,
-      action: 'created',
-      new_value: { title: d.title, priority: d.priority },
+    // Log activity using the centralized logger (replaces the raw insert)
+    await logActivity({
+      workspaceId: ctx.workspaceId,
+      userId: ctx.userId,
+      entityType: 'task',
+      entityId: (task as any).id,
+      entityTitle: (task as any).title,
+      action: 'task_created',
+      metadata: {
+        priority: d.priority,
+        status: d.status,
+        actorName: ctx.userFullName,
+      },
+      // Notify the assigned user if different from creator
+      notifyUserIds: d.assignedTo && d.assignedTo !== ctx.userId ? [d.assignedTo] : [],
     })
+
+    // Also log a separate assignment activity if the task is assigned to someone else
+    if (d.assignedTo && d.assignedTo !== ctx.userId) {
+      await logActivity({
+        workspaceId: ctx.workspaceId,
+        userId: ctx.userId,
+        entityType: 'task',
+        entityId: (task as any).id,
+        entityTitle: (task as any).title,
+        action: 'task_assigned',
+        metadata: {
+          assignedTo: d.assignedTo,
+          actorName: ctx.userFullName,
+        },
+        notifyUserIds: [d.assignedTo],
+      })
+    }
 
     return Response.json({ task }, { status: 201 })
   },

@@ -1,305 +1,274 @@
+// apps/web/src/app/onboarding/workspace/workspace-client.tsx
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { Loader2, Upload, Building2 } from 'lucide-react'
+import { Loader2, Upload, Building2, Check, ArrowRight } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+import { motion } from 'framer-motion'
 
 const INDUSTRIES = [
-  'Real Estate', 'Healthcare', 'Construction', 'Legal & Finance',
-  'Education', 'Logistics', 'Technology', 'Retail', 'Hospitality', 'Other',
+  'Technology', 'Real Estate', 'Healthcare', 'Construction',
+  'Legal & Finance', 'Education', 'Logistics', 'Retail', 'Hospitality', 'Other',
 ]
+
+const COLORS = ['#6366F1', '#8B5CF6', '#EC4899', '#10B981', '#F59E0B', '#EF4444', '#06B6D4', '#3B82F6']
 
 const SIZES = ['1–10', '11–50', '51–200', '201–500', '500+']
 
-const schema = z.object({
-  name: z.string().min(2, 'Workspace name must be at least 2 characters'),
-  industry: z.string().min(1, 'Select your industry'),
-  size: z.string().min(1, 'Select your team size'),
-  primaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Invalid colour'),
-})
-
-type FormData = z.infer<typeof schema>
-
 export default function OnboardingWorkspaceClient() {
   const router = useRouter()
+  const [name, setName] = useState('')
+  const [industry, setIndustry] = useState('')
+  const [size, setSize] = useState('')
+  const [color, setColor] = useState('#6366F1')
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [logoPreview, setLogoPreview] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [checkingAuth, setCheckingAuth] = useState(true)
   const supabase = createClient()
 
-  const {
-    register,
-    handleSubmit,
-    watch,
-    formState: { errors, isSubmitting },
-  } = useForm<FormData>({
-    resolver: zodResolver(schema),
-    defaultValues: { primaryColor: '#6366F1' },
-  })
-
-  const primaryColor = watch('primaryColor')
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) router.replace('/signup')
+      else setCheckingAuth(false)
+    })
+  }, [])
 
   function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error('Logo must be under 2MB')
-      return
-    }
+    if (file.size > 2 * 1024 * 1024) { toast.error('Logo must be under 2MB'); return }
     setLogoFile(file)
     setLogoPreview(URL.createObjectURL(file))
   }
 
-  async function onSubmit(data: FormData) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      toast.error('Session expired. Please sign in again.')
-      router.push('/login')
-      return
-    }
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!name.trim()) { toast.error('Workspace name is required'); return }
+    if (!industry) { toast.error('Select your industry'); return }
+    if (!size) { toast.error('Select your team size'); return }
+    setLoading(true)
 
     try {
-      const slug =
-        data.name
-          .toLowerCase()
-          .replace(/[^a-z0-9]/g, '-')
-          .replace(/-+/g, '-')
-          .replace(/^-|-$/g, '') +
-        '-' +
-        Math.random().toString(36).slice(2, 6)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { toast.error('Session expired. Please sign in.'); router.replace('/login'); return }
+
+      const slug = name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') + '-' + Math.random().toString(36).slice(2, 6)
 
       const { data: workspace, error: wsError } = await supabase
         .from('workspaces')
-        .insert({
-          name: data.name,
-          slug,
-          industry: data.industry,
-          size: data.size,
-          primary_color: data.primaryColor,
-        })
+        .insert({ name: name.trim(), slug, industry, size, primary_color: color, plan: 'free' })
         .select('id')
         .single()
 
       if (wsError || !workspace) throw wsError
 
-      const workspaceId = (workspace as { id: string }).id
+      const wid = (workspace as any).id
 
-      let logoUrl: string | null = null
+      // Upload logo if provided
       if (logoFile) {
         const ext = logoFile.name.split('.').pop()
-        const path = `${workspaceId}/logo.${ext}`
+        const path = `${wid}/logo-${Date.now()}.${ext}`
         const { error: uploadError } = await supabase.storage
-          .from('workspace-assets')
+          .from('workspace-logos')
           .upload(path, logoFile, { upsert: true })
-
         if (!uploadError) {
-          const { data: urlData } = supabase.storage
-            .from('workspace-assets')
-            .getPublicUrl(path)
-          logoUrl = urlData.publicUrl
-
-          await supabase
-            .from('workspaces')
-            .update({ logo_url: logoUrl })
-            .eq('id', workspaceId)
+          const { data: { publicUrl } } = supabase.storage.from('workspace-logos').getPublicUrl(path)
+          await supabase.from('workspaces').update({ logo_url: publicUrl }).eq('id', wid)
         }
       }
 
       const defaultRoles = [
-        { name: 'Executive', level: 1, color: '#7C3AED', is_default: true,
-          permissions: { viewAllDepartments: true, viewAllKPIs: true, manageWorkspace: true } },
-        { name: 'Manager', level: 2, color: '#2563EB', is_default: true,
-          permissions: { viewTeamKPIs: true, setGoals: true, exportReports: true } },
-        { name: 'Team Lead', level: 3, color: '#059669', is_default: true,
-          permissions: { viewTeamTasks: true, assignTasks: true } },
-        { name: 'Staff', level: 4, color: '#D97706', is_default: true,
-          permissions: { logTasks: true, updateOwnTasks: true } },
+        { name: 'Executive', level: 1, color: '#7C3AED', is_default: true, permissions: { viewAllKPIs: true, manageWorkspace: true, viewCRM: true } },
+        { name: 'Manager', level: 2, color: '#2563EB', is_default: true, permissions: { viewTeamKPIs: true, setGoals: true, exportReports: true, viewCRM: true } },
+        { name: 'Team Lead', level: 3, color: '#059669', is_default: true, permissions: { viewTeamTasks: true, assignTasks: true } },
+        { name: 'Staff', level: 4, color: '#D97706', is_default: true, permissions: { logTasks: true, updateOwnTasks: true } },
       ]
 
-      const { data: roles } = await supabase
+      const { data: roles, error: rolesError } = await supabase
         .from('roles')
-        .insert(defaultRoles.map((r) => ({ ...r, workspace_id: workspaceId })))
+        .insert(defaultRoles.map(r => ({ ...r, workspace_id: wid })))
         .select('id, level')
 
-      const staffRole = (roles as { id: string; level: number }[] | null)?.find(
-        (r) => r.level === 1
-      )
+      if (rolesError) throw rolesError
 
-      await supabase.from('users').upsert({
+      const execRole = (roles as any[]).find(r => r.level === 1)
+
+      const { error: userError } = await supabase.from('users').upsert({
         id: user.id,
-        workspace_id: workspaceId,
-        role_id: staffRole?.id ?? null,
+        workspace_id: wid,
+        role_id: execRole?.id ?? null,
         full_name: user.user_metadata?.full_name ?? user.email?.split('@')[0] ?? 'User',
         email: user.email ?? '',
+        is_active: true,
       })
+
+      if (userError) throw userError
 
       toast.success('Workspace created')
       router.push('/onboarding/structure')
-    } catch (err) {
+    } catch (err: any) {
       console.error(err)
       toast.error('Failed to create workspace. Please try again.')
+    } finally {
+      setLoading(false)
     }
   }
 
+  if (checkingAuth) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="w-6 h-6 animate-spin text-indigo-400" />
+      </div>
+    )
+  }
+
   return (
-    <>
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: 'easeOut' }}
+    >
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-[var(--text-primary)]">Set up your workspace</h1>
-        <p className="text-[var(--text-secondary)] mt-1">
-          This is your team&apos;s home in WorkPulse. You can change everything later.
-        </p>
+        <h1 className="text-2xl font-bold text-white tracking-tight">Set up your workspace</h1>
+        <p className="text-slate-300 mt-1.5">Your team's home in WorkPulse. You can update everything later.</p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        {/* Logo upload */}
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Logo */}
         <div>
           <label className="block text-sm font-medium text-slate-300 mb-2">
-            Workspace logo <span className="text-[var(--text-muted)]">(optional)</span>
+            Workspace logo <span className="text-slate-500 font-normal">(optional)</span>
           </label>
           <div className="flex items-center gap-4">
-            <div
-              className="w-16 h-16 rounded-xl border-2 border-dashed border-[var(--border)]20
-                flex items-center justify-center overflow-hidden bg-white/5"
-            >
-              {logoPreview ? (
-                <img src={logoPreview} alt="Logo" className="w-full h-full object-cover" />
-              ) : (
-                <Building2 className="w-6 h-6 text-[var(--text-muted)]" />
-              )}
+            <div className="w-14 h-14 rounded-xl border border-white/10 bg-white/5 flex items-center justify-center overflow-hidden shrink-0">
+              {logoPreview
+                ? <img src={logoPreview} alt="Logo" className="w-full h-full object-cover" />
+                : <Building2 className="w-5 h-5 text-slate-500" />
+              }
             </div>
             <label className="cursor-pointer">
-              <div
-                className="flex items-center gap-2 px-4 py-2 rounded-lg border
-                  border-[var(--border)]10 text-slate-300 hover:border-[var(--border)]30 hover:text-[var(--text-primary)]
-                  transition text-sm"
-              >
+              <div className="flex items-center gap-2 px-4 py-2 rounded-lg border border-white/10 text-slate-400 hover:border-white/20 hover:text-white transition text-sm">
                 <Upload className="w-4 h-4" />
                 Upload logo
               </div>
-              <input
-                type="file"
-                accept="image/png,image/jpeg,image/svg+xml"
-                className="hidden"
-                onChange={handleLogoChange}
-              />
+              <input type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" className="hidden" onChange={handleLogoChange} />
             </label>
           </div>
         </div>
 
-        {/* Workspace name */}
+        {/* Name */}
         <div>
           <label className="block text-sm font-medium text-slate-300 mb-1.5">
             Workspace name <span className="text-red-400">*</span>
           </label>
           <input
-            {...register('name')}
             type="text"
+            value={name}
+            onChange={e => setName(e.target.value)}
             placeholder="Acme Corporation"
-            className="w-full bg-white/5 border border-[var(--border)]10 rounded-xl px-4 py-3
-              text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2
-              focus:ring-indigo-500 transition"
+            autoFocus
+            className="w-full h-11 px-4 rounded-xl border text-sm transition-all
+              bg-white/5 border-white/10 text-white placeholder:text-slate-600
+              focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/60
+              hover:border-white/20"
           />
-          {errors.name && <p className="text-red-400 text-sm mt-1">{errors.name.message}</p>}
         </div>
 
         {/* Industry */}
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-1.5">
+          <label className="block text-sm font-medium text-slate-300 mb-2">
             Industry <span className="text-red-400">*</span>
           </label>
-          <select
-            {...register('industry')}
-            className="w-full bg-[var(--bg-elevated)] border border-[var(--border)]10 rounded-xl px-4 py-3
-              text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500 transition"
-          >
-            <option value="">Select your industry</option>
-            {INDUSTRIES.map((ind) => (
-              <option key={ind} value={ind}>
-                {ind}
-              </option>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {INDUSTRIES.map(ind => (
+              <button
+                key={ind}
+                type="button"
+                onClick={() => setIndustry(ind)}
+                className={`relative flex items-center justify-between px-3 py-2.5 rounded-xl border text-sm font-medium transition-all text-left
+                  ${industry === ind
+                    ? 'border-indigo-500/60 bg-indigo-500/10 text-white'
+                    : 'border-white/10 bg-white/[0.02] text-slate-400 hover:border-white/20 hover:text-slate-200'
+                  }`}
+              >
+                <span className="truncate">{ind}</span>
+                {industry === ind && <Check className="w-3.5 h-3.5 text-indigo-400 shrink-0 ml-1" />}
+              </button>
             ))}
-          </select>
-          {errors.industry && (
-            <p className="text-red-400 text-sm mt-1">{errors.industry.message}</p>
-          )}
+          </div>
         </div>
 
         {/* Team size */}
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-1.5">
+          <label className="block text-sm font-medium text-slate-300 mb-2">
             Team size <span className="text-red-400">*</span>
           </label>
-          <div className="grid grid-cols-5 gap-2">
-            {SIZES.map((size) => (
-              <label key={size} className="cursor-pointer">
-                <input
-                  {...register('size')}
-                  type="radio"
-                  value={size}
-                  className="sr-only peer"
-                />
-                <div
-                  className="text-center py-2.5 rounded-xl border border-[var(--border)]10
-                    text-[var(--text-secondary)] text-sm font-medium transition cursor-pointer
-                    peer-checked:border-indigo-500 peer-checked:text-[var(--text-primary)]
-                    peer-checked:bg-indigo-500/10 hover:border-[var(--border)]30"
-                >
-                  {size}
-                </div>
-              </label>
+          <div className="flex gap-2 flex-wrap">
+            {SIZES.map(s => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => setSize(s)}
+                className={`px-4 py-2 rounded-xl border text-sm font-medium transition-all
+                  ${size === s
+                    ? 'border-indigo-500/60 bg-indigo-500/10 text-white'
+                    : 'border-white/10 bg-white/[0.02] text-slate-400 hover:border-white/20 hover:text-slate-200'
+                  }`}
+              >
+                {s}
+              </button>
             ))}
           </div>
-          {errors.size && <p className="text-red-400 text-sm mt-1">{errors.size.message}</p>}
         </div>
 
-        {/* Brand colour */}
+        {/* Brand color */}
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-1.5">
-            Brand colour
-          </label>
-          <div className="flex items-center gap-3">
-            <input
-              type="color"
-              {...register('primaryColor')}
-              className="w-12 h-12 rounded-xl border border-[var(--border)]10 bg-transparent
-                cursor-pointer p-1"
-            />
-            <div className="flex gap-2">
-              {['#6366F1', '#8B5CF6', '#EC4899', '#10B981', '#F59E0B', '#EF4444'].map(
-                (colour) => (
-                  <button
-                    key={colour}
-                    type="button"
-                    onClick={() => {}}
-                    style={{ backgroundColor: colour }}
-                    className="w-8 h-8 rounded-lg border-2 border-transparent
-                      hover:border-white transition"
-                  />
-                )
-              )}
+          <label className="block text-sm font-medium text-slate-300 mb-2">Brand colour</label>
+          <div className="flex items-center gap-3 flex-wrap">
+            {COLORS.map(c => (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setColor(c)}
+                className="relative w-9 h-9 rounded-xl transition-transform hover:scale-110 border-2"
+                style={{
+                  backgroundColor: c,
+                  borderColor: color === c ? 'white' : 'transparent',
+                }}
+              >
+                {color === c && <Check className="w-4 h-4 text-white absolute inset-0 m-auto" />}
+              </button>
+            ))}
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={color}
+                onChange={e => setColor(e.target.value)}
+                className="w-9 h-9 rounded-xl border-2 border-white/10 cursor-pointer bg-transparent p-0.5"
+              />
+              <span className="text-slate-500 text-xs font-mono">{color}</span>
             </div>
-            <span className="text-[var(--text-secondary)] text-sm font-mono">{primaryColor}</span>
           </div>
         </div>
 
         <button
           type="submit"
-          disabled={isSubmitting}
-          className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50
-            text-[var(--text-primary)] font-semibold py-3 rounded-xl transition
-            flex items-center justify-center gap-2"
+          disabled={loading}
+          className="w-full h-11 rounded-xl text-sm font-semibold text-white
+            flex items-center justify-center gap-2 transition-all
+            disabled:opacity-50 disabled:cursor-not-allowed
+            hover:opacity-90 active:scale-[0.98]"
+          style={{ background: color }}
         >
-          {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
-          {isSubmitting ? 'Creating workspace...' : 'Continue'}
+          {loading
+            ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating workspace...</>
+            : <><span>Continue</span><ArrowRight className="w-4 h-4" /></>
+          }
         </button>
       </form>
-    </>
+    </motion.div>
   )
 }

@@ -1,3 +1,4 @@
+// apps/web/src/lib/supabase/middleware.ts
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
@@ -75,6 +76,9 @@ export async function updateSession(request: NextRequest) {
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)
   }
+
+  // Set x-pathname header for settings layout
+  supabaseResponse.headers.set('x-pathname', pathname)
 
   return supabaseResponse
 }

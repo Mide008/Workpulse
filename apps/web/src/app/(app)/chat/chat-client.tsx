@@ -14,6 +14,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
+import { EmptyState } from '@/components/ui/empty-state'
 
 interface Message {
   id: string
@@ -378,21 +379,20 @@ export default function ChatClient({
             </div>
           </>
         ) : (
-          <div className="flex-1 flex flex-col items-center justify-center">
-            <MessageSquare className="w-16 h-16 text-slate-700 mb-4" />
-            <h3 className="text-[var(--text-primary)] font-semibold text-lg mb-1">Select a channel</h3>
-            <p className="text-[var(--text-muted)] text-sm">Choose a channel from the sidebar to start messaging</p>
-            {channels.length === 0 && (
-              <Button
-                variant="secondary"
-                size="sm"
-                className="mt-4"
-                onClick={() => setShowNewChannel(true)}
-              >
-                <Plus className="w-3.5 h-3.5 mr-1.5" /> Create first channel
-              </Button>
-            )}
-          </div>
+          channels.length === 0 ? (
+            <EmptyState
+              icon={<MessageSquare className="w-7 h-7" />}
+              title="No channels yet"
+              description="Channels keep team conversations organised by topic or project. Create your first channel to start collaborating."
+              action={{ label: 'Create channel', onClick: () => setShowNewChannel(true) }}
+            />
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center">
+              <MessageSquare className="w-16 h-16 text-slate-700 mb-4" />
+              <h3 className="text-[var(--text-primary)] font-semibold text-lg mb-1">Select a channel</h3>
+              <p className="text-[var(--text-muted)] text-sm">Choose a channel from the sidebar to start messaging</p>
+            </div>
+          )
         )}
       </div>
 

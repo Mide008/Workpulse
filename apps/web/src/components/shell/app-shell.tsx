@@ -7,6 +7,8 @@ import { usePathname } from 'next/navigation'
 import Sidebar from './sidebar'
 import Header from './header'
 import MobileNav from './mobile-nav'
+import KeyboardShortcuts from './keyboard-shortcuts'
+import PWAInstallPrompt from './pwa-install-prompt'
 
 interface AppShellProps {
   user: {
@@ -59,6 +61,8 @@ export default function AppShell({ user, children }: AppShellProps) {
       </div>
 
       <MobileNav />
+      <KeyboardShortcuts />
+      <PWAInstallPrompt />
     </div>
   )
 }

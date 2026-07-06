@@ -1,3 +1,4 @@
+// app/onboarding/workspace/page.tsx
 export const dynamic = 'force-dynamic'
 
 import OnboardingWorkspaceClient from './workspace-client'

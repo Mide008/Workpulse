@@ -11,7 +11,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
-  themeColor: '#020617',
+  themeColor: '#6366F1',
 }
 
 export const metadata: Metadata = {
@@ -22,6 +22,10 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: 'black-translucent',
     title: 'WorkPulse',
+  },
+  icons: {
+    apple: '/icons/icon-192.png',
+    icon: '/icons/icon-192.png',
   },
 }
 
@@ -44,6 +48,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             `
           }}
         />
+        <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="WorkPulse" />
       </head>
       <body 
         className={`${outfit.variable} font-sans antialiased min-h-full flex flex-col bg-[var(--bg-base)] text-[var(--text-primary)] transition-colors duration-200`} 
@@ -58,6 +67,25 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         >
           <Providers>{children}</Providers>
         </Suspense>
+
+        {/* Service Worker Registration */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js')
+                    .then(function(reg) {
+                      console.log('Service Worker registered successfully');
+                    })
+                    .catch(function(err) {
+                      console.log('Service Worker registration failed:', err);
+                    });
+                });
+              }
+            `
+          }}
+        />
       </body>
     </html>
   )

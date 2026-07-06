@@ -1,3 +1,4 @@
+// apps/web/src/lib/api-guard.ts
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { hasPermission, canUsePlanFeature } from '@/lib/permissions'
 import type { Permission, Plan } from '@/lib/permissions'
@@ -8,8 +9,13 @@ export interface AuthContext {
   workspaceId: string
   roleLevel: number
   plan: Plan
+  userFullName: string   // <-- added
 }
 
+/**
+ * Internal helper to fetch and build the auth context.
+ * Used by `withAuth` and can be reused elsewhere if needed.
+ */
 export async function getAuthContext(req: NextRequest): Promise<AuthContext | null> {
   const supabase = await createServerSupabaseClient()
 
@@ -22,23 +28,28 @@ export async function getAuthContext(req: NextRequest): Promise<AuthContext | nu
 
   const { data: profile } = await supabase
     .from('users')
-    .select('workspace_id, role_id, workspace:workspaces(plan), role:roles(level)')
+    .select('workspace_id, full_name, role:roles(level), workspace:workspaces(plan)')
     .eq('id', user.id)
     .single()
 
   if (!profile) return null
 
-  const workspaceData = profile.workspace as { plan: string } | null
-  const roleData = profile.role as { level: number } | null
+  const p = profile as any
 
   return {
     userId: user.id,
-    workspaceId: profile.workspace_id,
-    roleLevel: roleData?.level ?? 4,
-    plan: (workspaceData?.plan ?? 'free') as Plan,
+    workspaceId: p.workspace_id,
+    roleLevel: p.role?.level ?? 4,
+    plan: (p.workspace?.plan ?? 'free') as Plan,
+    userFullName: p.full_name ?? user.email?.split('@')[0] ?? 'User',
   }
 }
 
+/**
+ * Higher‑order function that wraps an API route handler.
+ * It checks authentication, permission, and plan features,
+ * then passes an `AuthContext` (including `userFullName`) to the handler.
+ */
 export function withAuth(
   handler: (req: NextRequest, ctx: AuthContext) => Promise<Response>,
   options?: { permission?: Permission; feature?: string }

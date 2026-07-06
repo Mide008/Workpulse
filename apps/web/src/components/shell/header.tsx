@@ -1,6 +1,7 @@
 // apps/web/src/components/shell/header.tsx
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Bell, Settings, Menu } from 'lucide-react'
@@ -9,6 +10,7 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/comp
 import ThemeToggle from '@/components/ui/theme-toggle'
 import { getInitials } from '@/lib/utils'
 import { cn } from '@/lib/utils'
+import GlobalSearch from '@/components/search/global-search'
 
 interface HeaderProps {
   user: {
@@ -19,12 +21,23 @@ interface HeaderProps {
     workspaceName: string
     workspaceLogo: string | null
     primaryColor: string
+    workspaceId: string
   }
   onMenuClick: () => void
 }
 
 export default function Header({ user, onMenuClick }: HeaderProps) {
   const pathname = usePathname()
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  useEffect(() => {
+    fetch('/api/notifications')
+      .then(r => r.json())
+      .then(({ notifications }) => {
+        setUnreadCount((notifications ?? []).filter((n: any) => !n.read).length)
+      })
+      .catch(() => {})
+  }, [])
 
   const pageTitle = (() => {
     if (pathname.startsWith('/dashboard')) return 'Dashboard'
@@ -54,6 +67,7 @@ export default function Header({ user, onMenuClick }: HeaderProps) {
           <h1 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>
             {pageTitle}
           </h1>
+          <GlobalSearch workspaceId={user.workspaceId} />
         </div>
 
         <div className="flex items-center gap-2">
@@ -68,6 +82,12 @@ export default function Header({ user, onMenuClick }: HeaderProps) {
                   pathname === '/notifications' && 'bg-indigo-500/10'
                 )}>
                 <Bell className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-[9px] font-bold text-white flex items-center justify-center"
+                    style={{ background: 'var(--primary)' }}>
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
               </Link>
             </TooltipTrigger>
             <TooltipContent>Notifications</TooltipContent>

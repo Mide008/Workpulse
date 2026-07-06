@@ -16,6 +16,7 @@ import { Progress } from '@/components/ui/progress'
 import { AvatarGroup } from '@/components/ui/avatar'
 import { staggerItem } from '@/lib/motion'
 import { ToggleButton } from '@/components/ui/toggle-button'
+import { EmptyState } from '@/components/ui/empty-state'
 
 const statusConfig: Record<string, { label: string; badge: BadgeVariant; icon: any }> = {
   active:    { label: 'Active', badge: 'success', icon: Clock },
@@ -95,18 +96,12 @@ export default function ProjectsClient({
       </div>
 
       {filtered.length === 0 ? (
-        <div className="text-center py-24 animate-fade-in">
-          <div className="w-16 h-16 rounded-2xl bg-white/[0.04] border border-[var(--border)]/[0.06] flex items-center justify-center mx-auto mb-4">
-            <FolderKanban className="w-7 h-7 text-slate-600" />
-          </div>
-          <p className="text-[var(--text-secondary)] font-medium">No projects found</p>
-          <p className="text-slate-600 text-sm mt-1">Initialize a digital deployment stack to establish workspace metrics.</p>
-          <Link href="/projects/new">
-            <Button variant="secondary" size="sm" className="mt-4" icon={<Plus className="w-3.5 h-3.5" />}>
-              New Project
-            </Button>
-          </Link>
-        </div>
+        <EmptyState
+          icon={<FolderKanban className="w-7 h-7" />}
+          title="No projects yet"
+          description="Projects group related tasks and give you a higher-level view of delivery. Create your first project to start organising your team's work."
+          action={{ label: 'Create project', href: '/projects/new' }}
+        />
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 stagger-children">
           {filtered.map((project, i) => (

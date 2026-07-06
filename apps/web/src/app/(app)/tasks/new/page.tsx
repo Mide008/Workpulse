@@ -1,4 +1,5 @@
-export const dynamic = 'force-dynamic';
+// apps/web/src/app/(app)/tasks/new/page.tsx
+export const dynamic = 'force-dynamic'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { getCurrentUser } from '@/lib/actions/auth'
 import { redirect } from 'next/navigation'

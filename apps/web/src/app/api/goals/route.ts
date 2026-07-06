@@ -1,5 +1,9 @@
+// apps/web/src/app/api/goals/route.ts
+export const dynamic = 'force-dynamic'   // optional – add if you want
+
 import { withAuth } from '@/lib/api-guard'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { logActivity } from '@/lib/activity'
 import { z } from 'zod'
 import type { NextRequest } from 'next/server'
 
@@ -63,10 +67,28 @@ export const POST = withAuth(
         start_date: d.startDate,
         due_date: d.dueDate,
       })
-      .select('id, title, status')
+      .select('id, title, status, user_id')
       .single()
 
     if (error) throw error
+
+    // ---- Log activity ----
+    await logActivity({
+      workspaceId: ctx.workspaceId,
+      userId: ctx.userId,
+      entityType: 'goal',
+      entityId: (goal as any).id,
+      entityTitle: (goal as any).title,
+      action: 'goal_created',
+      metadata: {
+        period: d.period,
+        targetValue: d.targetValue,
+        actorName: ctx.userFullName,
+      },
+      // Notify the goal owner (if different from creator)
+      notifyUserIds: d.userId !== ctx.userId ? [d.userId] : [],
+    })
+
     return Response.json({ goal }, { status: 201 })
   },
   { permission: 'set_goals' }

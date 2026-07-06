@@ -1,5 +1,7 @@
+// apps/web/src/app/api/tasks/[id]/route.ts
 import { withAuth } from '@/lib/api-guard'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { logActivity } from '@/lib/activity'
 import { z } from 'zod'
 import type { NextRequest } from 'next/server'
 
@@ -69,9 +71,10 @@ export const PATCH = withAuth(async (req: NextRequest, ctx) => {
   const supabase = await createServerSupabaseClient()
   const d = parsed.data
 
+  // Get current state for activity logging
   const { data: current } = await supabase
     .from('tasks')
-    .select('status, priority, assigned_to, title')
+    .select('status, priority, assigned_to, title, blocker_reason')
     .eq('id', id!)
     .single()
 
@@ -96,25 +99,103 @@ export const PATCH = withAuth(async (req: NextRequest, ctx) => {
   if (d.category !== undefined) updates.category = d.category
   if (d.tags !== undefined) updates.tags = d.tags
 
-  // Cast the entire update chain to any
+  // Cast updates to any to avoid type errors
   const { data: task, error } = await (supabase
     .from('tasks') as any)
     .update(updates)
     .eq('id', id!)
     .eq('workspace_id', ctx.workspaceId)
-    .select('id, title, status, priority, progress, updated_at')
+    .select('id, title, status, priority, progress, updated_at, assigned_to')
     .single()
 
   if (error) throw error
 
-  // Activity log – cast to any
-  await (supabase.from('task_activities') as any).insert({
+  // Keep the existing task_activities log (for backward compatibility)
+  await supabase.from('task_activities').insert({
     task_id: id,
     user_id: ctx.userId,
     action: 'updated',
     old_value: current,
     new_value: updates,
   })
+
+  // ---- New activity logging via logActivity ----
+  const t = task as any
+  const notifyUsers: string[] = []
+  if (t.assigned_to && t.assigned_to !== ctx.userId) notifyUsers.push(t.assigned_to)
+  if (current?.assigned_to && current.assigned_to !== ctx.userId && current.assigned_to !== t.assigned_to) {
+    notifyUsers.push(current.assigned_to)
+  }
+
+  // Status change
+  if (d.status && d.status !== current?.status) {
+    await logActivity({
+      workspaceId: ctx.workspaceId,
+      userId: ctx.userId,
+      entityType: 'task',
+      entityId: t.id,
+      entityTitle: t.title,
+      action: d.status === 'done' ? 'task_completed' : 'task_status_changed',
+      metadata: { prevStatus: current?.status, newStatus: d.status, actorName: ctx.userFullName },
+      notifyUserIds: notifyUsers,
+    })
+  }
+
+  // Blocker added
+  if (d.blockerReason && !current?.blocker_reason) {
+    await logActivity({
+      workspaceId: ctx.workspaceId,
+      userId: ctx.userId,
+      entityType: 'task',
+      entityId: t.id,
+      entityTitle: t.title,
+      action: 'blocker_added',
+      metadata: { reason: d.blockerReason, actorName: ctx.userFullName },
+      notifyUserIds: notifyUsers,
+    })
+  }
+
+  // Blocker resolved
+  if (d.blockerReason === null && current?.blocker_reason) {
+    await logActivity({
+      workspaceId: ctx.workspaceId,
+      userId: ctx.userId,
+      entityType: 'task',
+      entityId: t.id,
+      entityTitle: t.title,
+      action: 'blocker_resolved',
+      metadata: { actorName: ctx.userFullName },
+      notifyUserIds: notifyUsers,
+    })
+  }
+
+  // Assignment change
+  if (d.assignedTo && d.assignedTo !== current?.assigned_to) {
+    await logActivity({
+      workspaceId: ctx.workspaceId,
+      userId: ctx.userId,
+      entityType: 'task',
+      entityId: t.id,
+      entityTitle: t.title,
+      action: 'task_assigned',
+      metadata: { actorName: ctx.userFullName },
+      notifyUserIds: d.assignedTo !== ctx.userId ? [d.assignedTo] : [],
+    })
+  }
+
+  // Generic update (any other field changed)
+  const changedFields = Object.keys(updates).filter(k => !['status', 'assigned_to', 'blocker_reason', 'completed_at'].includes(k))
+  if (changedFields.length > 0) {
+    await logActivity({
+      workspaceId: ctx.workspaceId,
+      userId: ctx.userId,
+      entityType: 'task',
+      entityId: t.id,
+      entityTitle: t.title,
+      action: 'task_updated',
+      metadata: { fields: changedFields, actorName: ctx.userFullName },
+    })
+  }
 
   return Response.json({ task })
 })
@@ -124,7 +205,10 @@ export const DELETE = withAuth(
     const id = req.nextUrl.pathname.split('/').at(-1)
     const supabase = await createServerSupabaseClient()
 
-    // Cast to any for deleted_at
+    // Get task title for activity log
+    const { data: task } = await supabase.from('tasks').select('title').eq('id', id!).single()
+
+    // Cast to any to allow deleted_at field
     const { error } = await (supabase
       .from('tasks') as any)
       .update({ deleted_at: new Date().toISOString() })
@@ -132,6 +216,17 @@ export const DELETE = withAuth(
       .eq('workspace_id', ctx.workspaceId)
 
     if (error) throw error
+
+    // Log deletion
+    await logActivity({
+      workspaceId: ctx.workspaceId,
+      userId: ctx.userId,
+      entityType: 'task',
+      entityId: id!,
+      entityTitle: (task as any)?.title ?? 'Task',
+      action: 'task_deleted',
+      metadata: { actorName: ctx.userFullName },
+    })
 
     return Response.json({ success: true })
   },

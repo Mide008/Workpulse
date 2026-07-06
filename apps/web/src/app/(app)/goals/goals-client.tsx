@@ -3,7 +3,7 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Target, Plus, ChevronDown, Check, X, Loader2 } from 'lucide-react'
+import { Target, Plus, ChevronDown, Check, X, Loader2, TrendingUp } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -14,6 +14,7 @@ import { Badge, type BadgeVariant } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { scaleIn } from '@/lib/motion'
+import { EmptyState } from '@/components/ui/empty-state'
 
 // Schema: targetValue is required (no .default())
 const schema = z.object({
@@ -58,6 +59,12 @@ export default function GoalsClient({
   const [showModal, setShowModal] = useState(false)
   const isManager = currentUser.roleLevel <= 2
 
+  // Check-in state
+  const [checkingIn, setCheckingIn] = useState<string | null>(null)
+  const [checkinNote, setCheckinNote] = useState('')
+  const [checkinValue, setCheckinValue] = useState<number>(0)
+  const [submittingCheckin, setSubmittingCheckin] = useState(false)
+
   const {
     register,
     handleSubmit,
@@ -67,7 +74,7 @@ export default function GoalsClient({
     resolver: zodResolver(schema),
     defaultValues: {
       period: 'monthly',
-      targetValue: '100',               // Provide default here
+      targetValue: '100',
       userId: currentUser.id,
       startDate: new Date().toISOString().split('T')[0],
       dueDate: '',
@@ -99,6 +106,34 @@ export default function GoalsClient({
     }
   }
 
+  async function submitCheckin() {
+    if (!checkingIn) return
+    setSubmittingCheckin(true)
+    try {
+      const res = await fetch(`/api/goals/${checkingIn}/checkin`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ progressValue: checkinValue, note: checkinNote }),
+      })
+      if (res.ok) {
+        setGoals(prev => prev.map((g: any) =>
+          g.id === checkingIn ? { ...g, current_value: checkinValue } : g
+        ))
+        toast.success('Check-in recorded')
+        setCheckingIn(null)
+        setCheckinNote('')
+        setCheckinValue(0)
+      } else {
+        const err = await res.json()
+        toast.error(err.error || 'Check-in failed')
+      }
+    } catch {
+      toast.error('Check-in failed')
+    } finally {
+      setSubmittingCheckin(false)
+    }
+  }
+
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
       <div className="flex items-start justify-between gap-4">
@@ -119,25 +154,12 @@ export default function GoalsClient({
       </div>
 
       {goals.length === 0 ? (
-        <div className="text-center py-24">
-          <div className="w-16 h-16 rounded-2xl bg-white/[0.04] border border-[var(--border)][0.06] flex items-center justify-center mx-auto mb-4">
-            <Target className="w-7 h-7 text-slate-600" />
-          </div>
-          <p className="text-[var(--text-secondary)] font-medium">No goals set yet</p>
-          <p className="text-slate-600 text-sm mt-1">
-            {isManager ? 'Set goals for your team to track progress' : 'Your manager will set goals for you here'}
-          </p>
-          {isManager && (
-            <Button
-              variant="secondary"
-              size="sm"
-              className="mt-4"
-              onClick={() => setShowModal(true)}
-            >
-              <Plus className="w-3.5 h-3.5 mr-1.5" /> Set first goal
-            </Button>
-          )}
-        </div>
+        <EmptyState
+          icon={<Target className="w-7 h-7" />}
+          title="No goals set"
+          description="Goals connect daily work to outcomes. Set measurable targets for individuals or the team, then track progress through check-ins over time."
+          action={{ label: 'Set first goal', onClick: () => setShowModal(true) }}
+        />
       ) : (
         <div className="space-y-3">
           {goals.map((goal, i) => {
@@ -192,12 +214,29 @@ export default function GoalsClient({
                   </div>
                   <Progress value={pct} color={pct >= 100 ? 'emerald' : pct >= 60 ? 'indigo' : 'amber'} size="md" />
                 </div>
+
+                {/* Check-in button */}
+                <div className="mt-4 flex justify-end">
+                  <button
+                    onClick={() => {
+                      setCheckingIn(goal.id)
+                      setCheckinValue(goal.current_value ?? 0)
+                      setCheckinNote('')
+                    }}
+                    className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg text-white transition hover:opacity-90"
+                    style={{ background: 'var(--primary)' }}
+                  >
+                    <TrendingUp className="w-3.5 h-3.5" />
+                    Check-in
+                  </button>
+                </div>
               </motion.div>
             )
           })}
         </div>
       )}
 
+      {/* Create goal modal */}
       <AnimatePresence>
         {showModal && (
           <motion.div
@@ -334,6 +373,88 @@ export default function GoalsClient({
               </form>
             </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Goal check-in modal */}
+      <AnimatePresence>
+        {checkingIn && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+              onClick={() => setCheckingIn(null)}
+            />
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: -16 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+                className="w-full max-w-md rounded-2xl border shadow-2xl p-6 pointer-events-auto"
+                style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}
+              >
+                <h3 className="text-lg font-bold mb-1" style={{ color: 'var(--text-primary)' }}>Record check-in</h3>
+                <p className="text-sm mb-5" style={{ color: 'var(--text-secondary)' }}>
+                  Update progress on this goal. Check-ins build the accountability trail managers and staff can both see.
+                </p>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+                      Current progress
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        step={1}
+                        value={checkinValue}
+                        onChange={e => setCheckinValue(Number(e.target.value))}
+                        className="flex-1 accent-indigo-600"
+                        style={{ accentColor: 'var(--primary)' }}
+                      />
+                      <span className="w-12 text-sm font-bold text-right" style={{ color: 'var(--text-primary)' }}>
+                        {checkinValue}%
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+                      Note <span style={{ color: 'var(--text-muted)' }}>(optional)</span>
+                    </label>
+                    <textarea
+                      value={checkinNote}
+                      onChange={e => setCheckinNote(e.target.value)}
+                      rows={3}
+                      placeholder="What progress was made? Any blockers?"
+                      className="w-full rounded-xl border px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                      style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-3 mt-5">
+                  <button
+                    onClick={() => setCheckingIn(null)}
+                    className="flex-1 h-11 rounded-xl border text-sm font-medium transition"
+                    style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={submitCheckin}
+                    disabled={submittingCheckin}
+                    className="flex-1 h-11 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+                    style={{ background: 'var(--primary)' }}
+                  >
+                    {submittingCheckin ? 'Saving...' : 'Save check-in'}
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          </>
         )}
       </AnimatePresence>
     </div>
