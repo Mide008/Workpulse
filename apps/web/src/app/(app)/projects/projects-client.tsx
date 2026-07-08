@@ -1,7 +1,8 @@
 /* app/(workspace)/projects/projects-client.tsx */
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react' // <-- added useEffect
+import { useRouter } from 'next/navigation' // <-- added useRouter
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import {
@@ -38,6 +39,12 @@ export default function ProjectsClient({
   initialProjects: any[]
   currentUser: any
 }) {
+  const router = useRouter()
+  // Refresh data after navigation (e.g., returning from project creation)
+  useEffect(() => {
+    router.refresh()
+  }, []) // <-- runs once on mount
+
   const [search, setSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('all')
 

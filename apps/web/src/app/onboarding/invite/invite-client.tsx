@@ -1,4 +1,4 @@
-// apps/web/src/app/onboarding/invite/invite-client.tsx
+// apps/web/src/app/(onboarding)/invite/invite-client.tsx
 'use client'
 
 import { useState } from 'react'
@@ -6,16 +6,7 @@ import { useRouter } from 'next/navigation'
 import { Plus, Trash2, Loader2, ArrowRight, Mail, Users } from 'lucide-react'
 import { toast } from 'sonner'
 import { motion } from 'framer-motion'
-
-// Helper: basic email validation + block common fake domains
-function isValidEmail(email: string): boolean {
-  const trimmed = email.trim()
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  if (!emailRegex.test(trimmed)) return false
-  const domain = trimmed.split('@')[1]
-  const fakeDomains = ['test.com', 'example.com', 'fake.com', 'mailinator.com', 'tempmail.com', 'guerrillamail.com']
-  return !fakeDomains.includes(domain)
-}
+import { validateEmailFormat } from '@/lib/email-validation'
 
 export default function OnboardingInviteClient() {
   const router = useRouter()
@@ -38,15 +29,24 @@ export default function OnboardingInviteClient() {
   }
 
   async function handleSend() {
-    const valid = emails.filter(inv => isValidEmail(inv.email))
-    if (valid.length === 0) {
+    // Filter out empty emails and validate format
+    const validEmails = emails.filter(inv => inv.email.trim() !== '')
+    const invalid = validEmails.some(inv => !validateEmailFormat(inv.email).valid)
+
+    if (invalid) {
+      toast.error('One or more email addresses are invalid. Fix them or remove them.')
+      return
+    }
+
+    if (validEmails.length === 0) {
       router.push('/onboarding/complete')
       return
     }
+
     setSending(true)
     try {
       const results = await Promise.allSettled(
-        valid.map(inv =>
+        validEmails.map(inv =>
           fetch('/api/invitations', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

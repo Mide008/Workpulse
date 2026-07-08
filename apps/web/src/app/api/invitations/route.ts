@@ -6,6 +6,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
 import { z } from 'zod'
 import type { NextRequest } from 'next/server'
+import { validateEmailFormat, validateEmailDomain } from '@/lib/email-validation'
 
 const schema = z.object({
   email: z.string().email(),
@@ -19,6 +20,18 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
 
   const { email, role } = parsed.data
   const cleanEmail = email.toLowerCase().trim()
+
+  // ----- Email validation (client‑side format + server‑side DNS) -----
+  const formatCheck = validateEmailFormat(cleanEmail)
+  if (!formatCheck.valid) {
+    return Response.json({ error: formatCheck.error }, { status: 400 })
+  }
+
+  const domainCheck = await validateEmailDomain(cleanEmail)
+  if (!domainCheck.valid) {
+    return Response.json({ error: domainCheck.error }, { status: 400 })
+  }
+
   const supabase = await createServerSupabaseClient()
 
   const [{ data: workspace }, { data: inviter }] = await Promise.all([
@@ -48,6 +61,12 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
     console.error('Insert error:', insertError)
     return Response.json({ error: 'Failed to create invitation' }, { status: 500 })
   }
+
+  // ---- Onboarding step tracking (cast to any to fix TypeScript) ----
+  await (supabase as any).rpc('mark_onboarding_step', {
+    workspace_id_param: ctx.workspaceId,
+    step_name: 'invited_member',
+  })
 
   let emailSent = false
 

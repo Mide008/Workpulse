@@ -96,6 +96,12 @@ export const POST = withAuth(
       notifyUserIds: d.memberIds?.filter(id => id !== ctx.userId) ?? [],
     })
 
+    // ---- Onboarding step tracking (cast to any to fix TypeScript) ----
+    await (supabase as any).rpc('mark_onboarding_step', {
+      workspace_id_param: ctx.workspaceId,
+      step_name: 'created_project',
+    })
+
     return Response.json({ project }, { status: 201 })
   },
   { permission: 'create_projects' }

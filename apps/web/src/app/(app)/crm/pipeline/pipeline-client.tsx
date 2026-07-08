@@ -430,6 +430,17 @@ export default function PipelineClient({ deals: initialDeals, contacts, companie
           </>
         )}
       </AnimatePresence>
+
+      {/* Mobile sticky add button */}
+      <div className="lg:hidden fixed bottom-20 right-4 z-30">
+        <button
+          onClick={() => setShowCreate(true)}
+          className="w-14 h-14 rounded-full text-white shadow-2xl flex items-center justify-center transition hover:opacity-90"
+          style={{ background: 'var(--primary)' }}
+        >
+          <Plus className="w-6 h-6" />
+        </button>
+      </div>
     </div>
   )
 }

@@ -9,6 +9,7 @@ import Header from './header'
 import MobileNav from './mobile-nav'
 import KeyboardShortcuts from './keyboard-shortcuts'
 import PWAInstallPrompt from './pwa-install-prompt'
+import PrimaryColorSync from './primary-color-sync'
 
 interface AppShellProps {
   user: {
@@ -33,12 +34,14 @@ export default function AppShell({ user, children }: AppShellProps) {
 
   return (
     <div
+      data-app-shell
       className="flex h-screen overflow-hidden transition-colors duration-200"
       style={{ 
         background: 'var(--bg-base)',
         '--primary': user.primaryColor 
       } as React.CSSProperties}
     >
+      <PrimaryColorSync color={user.primaryColor} />
       <Sidebar user={user} open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">

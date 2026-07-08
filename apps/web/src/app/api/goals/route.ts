@@ -1,5 +1,5 @@
 // apps/web/src/app/api/goals/route.ts
-export const dynamic = 'force-dynamic'   // optional – add if you want
+export const dynamic = 'force-dynamic'
 
 import { withAuth } from '@/lib/api-guard'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
@@ -87,6 +87,12 @@ export const POST = withAuth(
       },
       // Notify the goal owner (if different from creator)
       notifyUserIds: d.userId !== ctx.userId ? [d.userId] : [],
+    })
+
+    // ---- Onboarding step tracking (cast to any to fix TypeScript) ----
+    await (supabase as any).rpc('mark_onboarding_step', {
+      workspace_id_param: ctx.workspaceId,
+      step_name: 'set_goal',
     })
 
     return Response.json({ goal }, { status: 201 })

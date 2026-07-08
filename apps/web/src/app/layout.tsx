@@ -37,12 +37,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           dangerouslySetInnerHTML={{
             __html: `
               try {
+                // Theme
                 var t = localStorage.getItem('wp-theme') || 'light';
                 document.documentElement.setAttribute('data-theme', t);
                 if (t === 'dark') {
                   document.documentElement.classList.add('dark');
                 } else {
                   document.documentElement.classList.remove('dark');
+                }
+                // Primary colour
+                var pc = localStorage.getItem('wp-primary-color');
+                if (pc) {
+                  document.documentElement.style.setProperty('--primary', pc);
                 }
               } catch(e) {}
             `

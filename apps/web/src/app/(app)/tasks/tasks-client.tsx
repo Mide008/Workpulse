@@ -1,7 +1,8 @@
 // apps/web/src/app/(app)/tasks/tasks-client.tsx
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
+import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import {
@@ -31,6 +32,7 @@ import { CSS } from '@dnd-kit/utilities'
 
 type ViewMode = 'list' | 'board'
 type SortKey = 'created_at' | 'due_date' | 'priority' | 'status'
+type DateFilter = 'all' | 'today' | 'week' | 'month' // <-- new type
 
 const PRIORITY_ORDER: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 }
 const STATUS_ORDER: Record<string, number> = { blocked: 0, in_progress: 1, review: 2, not_started: 3, done: 4 }
@@ -115,6 +117,12 @@ export default function TasksClient({ initialTasks, projects, members, currentUs
   members: any[]
   currentUser: any
 }) {
+  const router = useRouter()
+  // Refresh data after navigation (e.g., returning from task creation)
+  useEffect(() => {
+    router.refresh()
+  }, [])
+
   // Local state so we can optimistically update on drag
   const [tasks, setTasks] = useState<Task[]>(initialTasks)
   const [view, setView] = useState<ViewMode>('list')
@@ -123,6 +131,9 @@ export default function TasksClient({ initialTasks, projects, members, currentUs
   const [filterPriority, setFilterPriority] = useState('all')
   const [sortBy, setSortBy] = useState<SortKey>('created_at')
   const [showFilters, setShowFilters] = useState(false)
+
+  // ---------- Date filter state ----------
+  const [dateFilter, setDateFilter] = useState<DateFilter>('all')
 
   // ---------- Bulk selection ----------
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -202,14 +213,38 @@ export default function TasksClient({ initialTasks, projects, members, currentUs
     })
   }
 
-  // ---------- Filtering & sorting ----------
+  // ---------- Filtering & sorting (with date filter) ----------
   const filteredTasks = useMemo(() => {
     let result = tasks.filter(t => {
       const matchSearch = !search || t.title.toLowerCase().includes(search.toLowerCase())
       const matchStatus = filterStatus === 'all' || t.status === filterStatus
       const matchPriority = filterPriority === 'all' || t.priority === filterPriority
-      return matchSearch && matchStatus && matchPriority
+
+      // --- Date filter ---
+      let matchDate = true
+      if (dateFilter !== 'all') {
+        if (!t.due_date) {
+          matchDate = false
+        } else {
+          const due = new Date(t.due_date)
+          const now = new Date()
+          now.setHours(0,0,0,0) // normalize time
+          if (dateFilter === 'today') {
+            matchDate = due.toDateString() === now.toDateString()
+          } else if (dateFilter === 'week') {
+            const weekEnd = new Date(now)
+            weekEnd.setDate(now.getDate() + 7)
+            matchDate = due >= now && due <= weekEnd
+          } else if (dateFilter === 'month') {
+            matchDate = due.getMonth() === now.getMonth() && due.getFullYear() === now.getFullYear()
+          }
+        }
+      }
+      // --- End date filter ---
+
+      return matchSearch && matchStatus && matchPriority && matchDate
     })
+
     result.sort((a, b) => {
       if (sortBy === 'priority') return (PRIORITY_ORDER[a.priority] ?? 99) - (PRIORITY_ORDER[b.priority] ?? 99)
       if (sortBy === 'status') return (STATUS_ORDER[a.status] ?? 99) - (STATUS_ORDER[b.status] ?? 99)
@@ -221,7 +256,7 @@ export default function TasksClient({ initialTasks, projects, members, currentUs
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     })
     return result
-  }, [tasks, search, filterStatus, filterPriority, sortBy])
+  }, [tasks, search, filterStatus, filterPriority, sortBy, dateFilter]) // added dateFilter to deps
 
   const stats = useMemo(() => ({
     total: tasks.length,
@@ -230,7 +265,7 @@ export default function TasksClient({ initialTasks, projects, members, currentUs
     overdue: tasks.filter(t => t.due_date && new Date(t.due_date) < new Date() && t.status !== 'done').length,
   }), [tasks])
 
-  const activeFilters = [filterStatus !== 'all', filterPriority !== 'all'].filter(Boolean).length
+  const activeFilters = [filterStatus !== 'all', filterPriority !== 'all', dateFilter !== 'all'].filter(Boolean).length
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-fade-in">
@@ -300,6 +335,23 @@ export default function TasksClient({ initialTasks, projects, members, currentUs
           <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)] pointer-events-none" />
         </div>
 
+        {/* Date filter buttons */}
+        <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'var(--bg-elevated)' }}>
+          {(['all', 'today', 'week', 'month'] as const).map(f => (
+            <button
+              key={f}
+              onClick={() => setDateFilter(f)}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-all"
+              style={dateFilter === f
+                ? { background: 'var(--primary)', color: 'white' }
+                : { color: 'var(--text-secondary)' }
+              }
+            >
+              {f === 'all' ? 'All dates' : f}
+            </button>
+          ))}
+        </div>
+
         <div className="flex items-center bg-white/[0.04] border border-[var(--border)]10 rounded-xl p-1">
           <Tooltip>
             <TooltipTrigger asChild>
@@ -367,7 +419,7 @@ export default function TasksClient({ initialTasks, projects, members, currentUs
                 </div>
               </div>
               {activeFilters > 0 && (
-                <button onClick={() => { setFilterStatus('all'); setFilterPriority('all') }}
+                <button onClick={() => { setFilterStatus('all'); setFilterPriority('all'); setDateFilter('all') }}
                   className="ml-auto text-xs text-[var(--text-muted)] hover:text-red-400 transition flex items-center gap-1">
                   <X className="w-3 h-3" /> Clear
                 </button>

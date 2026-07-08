@@ -126,6 +126,12 @@ export const POST = withAuth(
       })
     }
 
+    // ---- Onboarding step tracking (cast to any to fix TypeScript) ----
+    await (supabase as any).rpc('mark_onboarding_step', {
+      workspace_id_param: ctx.workspaceId,
+      step_name: 'created_task',
+    })
+
     return Response.json({ task }, { status: 201 })
   },
   { permission: 'create_tasks' }

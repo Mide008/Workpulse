@@ -170,6 +170,8 @@ export default function AnalyticsClient({ tasks, members, blockedTasks, currentU
       if (res.ok) {
         const { summary } = await res.json()
         setAiSummary(summary)
+        // ---- Onboarding step tracking for report generation ----
+        fetch('/api/reports/mark-generated', { method: 'POST' }).catch(() => {})
       } else {
         setAiSummary('Unable to generate summary. Try again.')
       }

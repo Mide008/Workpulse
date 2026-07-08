@@ -11,19 +11,10 @@ import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip'
 import { fadeInUp, staggerContainer, staggerItem } from '@/lib/motion'
+import { validateEmailFormat } from '@/lib/email-validation'
 
 const COLORS = ['#6366F1','#8B5CF6','#EC4899','#10B981','#F59E0B','#EF4444','#06B6D4','#3B82F6']
 const INDUSTRIES = ['Technology','Real Estate','Healthcare','Construction','Legal & Finance','Education','Logistics','Retail','Hospitality','Other']
-
-// Helper: basic email validation + block common fake domains
-function isValidEmail(email: string): boolean {
-  const trimmed = email.trim()
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  if (!emailRegex.test(trimmed)) return false
-  const domain = trimmed.split('@')[1]
-  const fakeDomains = ['test.com', 'example.com', 'fake.com', 'mailinator.com', 'tempmail.com', 'guerrillamail.com']
-  return !fakeDomains.includes(domain)
-}
 
 export default function WorkspaceSettingsClient({ workspace: initial, user }: { workspace: any; user: any }) {
   const supabase = createClient()
@@ -129,6 +120,9 @@ export default function WorkspaceSettingsClient({ workspace: initial, user }: { 
       toast.error('Failed to save changes')
     } else {
       toast.success('Workspace updated')
+      // Apply brand colour immediately
+      document.documentElement.style.setProperty('--primary', color)
+      try { localStorage.setItem('wp-primary-color', color) } catch {}
       router.refresh()
     }
     setSaving(false)
@@ -138,10 +132,27 @@ export default function WorkspaceSettingsClient({ workspace: initial, user }: { 
     e.preventDefault()
     const email = inviteEmail.trim()
     if (!email) { toast.error('Please enter an email address'); return }
-    if (!isValidEmail(email)) {
-      toast.error('Please enter a valid email address (company domains only)')
+
+    // Client‑side format validation
+    const formatCheck = validateEmailFormat(email)
+    if (!formatCheck.valid) {
+      toast.error(formatCheck.error ?? 'Invalid email address')
       return
     }
+
+    // Check for existing pending invitation
+    const existing = invitations.find(
+      (inv: any) => inv.email.toLowerCase() === email.toLowerCase()
+    )
+    if (existing) {
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? window.location.origin
+      const url = `${appUrl}/invite?token=${existing.token}`
+      setLastInviteUrl(url)
+      await navigator.clipboard.writeText(url).catch(() => {})
+      toast.info(`${email} was already invited. The link has been copied — share it directly.`)
+      return
+    }
+
     setInviting(true)
     try {
       const res = await fetch('/api/invitations', {
@@ -152,13 +163,14 @@ export default function WorkspaceSettingsClient({ workspace: initial, user }: { 
       const data = await res.json()
       if (res.ok) {
         setLastInviteUrl(data.inviteUrl)
-        if (data.emailSent) {
-          toast.success(`Invitation email sent to ${email}`)
-        } else {
-          toast.info('Invitation created — copy and share the link below')
-        }
+        // Always copy the link — email delivery is best‑effort only
         if (data.inviteUrl) {
           await navigator.clipboard.writeText(data.inviteUrl).catch(() => {})
+        }
+        if (data.emailSent) {
+          toast.success(`Invitation sent to ${email}. Link also copied to clipboard as backup.`)
+        } else {
+          toast.success(`Invite link created and copied to clipboard. Share it directly with ${email}.`)
         }
         setInviteEmail('')
         await fetchInvitations()
@@ -166,7 +178,7 @@ export default function WorkspaceSettingsClient({ workspace: initial, user }: { 
         toast.error(data.error ?? 'Failed to send invitation')
       }
     } catch {
-      toast.error('Network error')
+      toast.error('Network error. Try again.')
     }
     setInviting(false)
   }
