@@ -3,292 +3,418 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { motion } from 'framer-motion'
-import { ArrowLeft, Calendar, Tag, User, FolderKanban, AlignLeft, Clock, ChevronDown } from 'lucide-react'
 import Link from 'next/link'
+import { motion } from 'framer-motion'
+import {
+  ArrowLeft, Plus, X, Loader2, Sparkles,
+  Calendar, Clock, AlertCircle, User, FolderKanban,
+} from 'lucide-react'
 import { toast } from 'sonner'
-import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
-import { fadeInUp } from '@/lib/motion'
-import TemplatePicker from '@/components/tasks/template-picker'
-import { TASK_TEMPLATES } from '@/lib/task-templates'
-
-const schema = z.object({
-  title: z.string().min(1, 'Title is required').max(500),
-  description: z.string().optional(),
-  priority: z.enum(['low', 'medium', 'high', 'critical']),
-  status: z.enum(['not_started', 'in_progress', 'blocked', 'review', 'done']),
-  dueDate: z.string().optional(),
-  estimatedHours: z.string().optional(),
-  projectId: z.string().optional(),
-  assignedTo: z.string().optional(),
-  category: z.string().optional(),
-  tags: z.string().optional(),
-})
-
-type FormData = z.infer<typeof schema>
+import { Button } from '@/components/ui/button'
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 
 const PRIORITIES = [
-  { value: 'low',      label: 'Low',      dot: 'bg-slate-400' },
-  { value: 'medium',   label: 'Medium',   dot: 'bg-amber-400' },
-  { value: 'high',     label: 'High',     dot: 'bg-orange-500' },
-  { value: 'critical', label: 'Critical', dot: 'bg-red-500' },
+  { value: 'low', label: 'Low', color: 'bg-slate-400' },
+  { value: 'medium', label: 'Medium', color: 'bg-amber-400' },
+  { value: 'high', label: 'High', color: 'bg-orange-500' },
+  { value: 'critical', label: 'Critical', color: 'bg-red-500' },
 ]
 
 const STATUSES = [
   { value: 'not_started', label: 'Not Started' },
   { value: 'in_progress', label: 'In Progress' },
-  { value: 'review',      label: 'In Review' },
-  { value: 'blocked',     label: 'Blocked' },
+  { value: 'review', label: 'In Review' },
+  { value: 'done', label: 'Done' },
 ]
 
-const CATEGORIES = [
-  'Development', 'Design', 'Marketing', 'Sales', 'Operations',
-  'Finance', 'Legal', 'HR', 'Research', 'Other',
-]
-
-export default function NewTaskClient({ projects, members, currentUserId }: {
+interface NewTaskClientProps {
   projects: any[]
   members: any[]
   currentUserId: string
-}) {
+}
+
+export default function NewTaskClient({ projects, members, currentUserId }: NewTaskClientProps) {
   const router = useRouter()
-  const [selectedPriority, setSelectedPriority] = useState('medium')
+  const [loading, setLoading] = useState(false)
 
-  const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<FormData>({
-    resolver: zodResolver(schema),
-    defaultValues: { priority: 'medium', status: 'not_started', assignedTo: currentUserId },
-  })
+  // Form state
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [priority, setPriority] = useState('medium')
+  const [status, setStatus] = useState('not_started')
+  const [assignedTo, setAssignedTo] = useState(currentUserId)
+  const [projectId, setProjectId] = useState('')
+  const [dueDate, setDueDate] = useState('')
+  const [estimatedHours, setEstimatedHours] = useState('')
+  const [category, setCategory] = useState('')
+  const [tags, setTags] = useState<string[]>([])
 
-  // Template application
-  function applyTemplate(template: any) {
-    setValue('title', template.defaults.title)
-    setValue('description', template.defaults.description)
-    setValue('priority', template.defaults.priority)
-    if (template.defaults.estimatedHours) {
-      setValue('estimatedHours', String(template.defaults.estimatedHours))
+  // ---------- Smart Assign state ----------
+  const [suggesting, setSuggesting] = useState(false)
+  const [suggestion, setSuggestion] = useState<any>(null)
+
+  // ---------- Smart Assign function ----------
+  async function getSuggestion() {
+    if (!title.trim()) {
+      toast.error('Enter a task title first')
+      return
     }
-    if (template.defaults.category) {
-      setValue('category', template.defaults.category)
+    setSuggesting(true)
+    setSuggestion(null)
+
+    try {
+      const res = await fetch('/api/agents/smart-assign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          taskTitle: title.trim(),
+          taskPriority: priority,
+          taskDescription: description.trim() || undefined,
+        }),
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        setSuggestion(data.suggestion)
+        // Auto-apply the suggested assignee if available
+        if (data.suggestion?.userId) {
+          setAssignedTo(data.suggestion.userId)
+        }
+      } else if (res.status === 404) {
+        toast.error('Smart Assign not available yet. Check back soon.')
+      } else {
+        const error = await res.json()
+        toast.error(error.error || 'Failed to get suggestion')
+      }
+    } catch {
+      toast.error('Network error. Try again.')
+    } finally {
+      setSuggesting(false)
     }
-    if (template.defaults.tags) {
-      setValue('tags', template.defaults.tags.join(', '))
-    }
-    // Automatically set status to 'not_started' (default)
-    setValue('status', 'not_started')
-    // Keep assignedTo as currentUserId (default)
-    toast.success(`Template "${template.name}" applied`)
   }
 
-  async function onSubmit(data: FormData) {
-    const res = await fetch('/api/tasks', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        title: data.title,
-        description: data.description,
-        priority: data.priority,
-        status: data.status,
-        dueDate: data.dueDate ? new Date(data.dueDate).toISOString() : undefined,
-        estimatedHours: data.estimatedHours ? parseFloat(data.estimatedHours) : undefined,
-        projectId: data.projectId || undefined,
-        assignedTo: data.assignedTo || currentUserId,
-        category: data.category || undefined,
-        tags: data.tags ? data.tags.split(',').map(t => t.trim()).filter(Boolean) : [],
-      }),
-    })
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}))
-      toast.error('Failed to create task: ' + (err.error ?? res.statusText))
+  // ---------- Form submission ----------
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!title.trim()) {
+      toast.error('Task title is required')
       return
     }
 
-    toast.success('Task created')
-    router.push('/tasks')
-    router.refresh()
+    setLoading(true)
+    try {
+      const res = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: title.trim(),
+          description: description.trim() || undefined,
+          priority,
+          status,
+          assignedTo: assignedTo || currentUserId,
+          projectId: projectId || undefined,
+          dueDate: dueDate || undefined,
+          estimatedHours: estimatedHours ? Number(estimatedHours) : undefined,
+          category: category || undefined,
+          tags: tags.length > 0 ? tags : undefined,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (res.ok) {
+        toast.success('Task created')
+        router.push('/tasks')
+        router.refresh()
+      } else {
+        toast.error(data.error || 'Failed to create task')
+      }
+    } catch {
+      toast.error('Network error. Try again.')
+    } finally {
+      setLoading(false)
+    }
   }
+
+  // ---------- Tag management ----------
+  function addTag(tag: string) {
+    const trimmed = tag.trim()
+    if (trimmed && !tags.includes(trimmed)) {
+      setTags([...tags, trimmed])
+    }
+  }
+
+  function removeTag(tag: string) {
+    setTags(tags.filter(t => t !== tag))
+  }
+
+  const inputClass = 'w-full bg-[var(--bg-surface)] border border-[var(--border)] rounded-xl px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40 transition'
 
   return (
     <div className="max-w-3xl mx-auto animate-fade-in">
-      <Link href="/tasks" className="inline-flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]
-        text-sm transition mb-6 group">
-        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-        Back to tasks
-      </Link>
+      {/* Header */}
+      <div className="flex items-center gap-4 mb-6">
+        <Link href="/tasks">
+          <button className="p-2 rounded-xl hover:bg-[var(--bg-elevated)] transition" style={{ color: 'var(--text-secondary)' }}>
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+        </Link>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>Create Task</h1>
+          <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Add a new task to your workspace</p>
+        </div>
+      </div>
 
-      <motion.div {...fadeInUp}>
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">Create new task</h1>
-            <p className="text-[var(--text-secondary)] text-sm mt-0.5">
-              Create a task manually or start from a template.
-            </p>
-          </div>
-          <TemplatePicker onSelect={applyTemplate} />
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Title */}
+        <div>
+          <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+            Task title <span className="text-red-400">*</span>
+          </label>
+          <input
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            placeholder="What needs to be done?"
+            className={inputClass}
+            autoFocus
+          />
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          <div>
-            <input
-              {...register('title')}
-              placeholder="What needs to be done?"
-              autoFocus
-              className={cn(
-                'w-full bg-transparent text-2xl font-semibold text-[var(--text-primary)]',
-                'placeholder:text-slate-600 border-0 border-b-2 border-[var(--border)]10',
-                'focus:outline-none focus:border-indigo-500 pb-3 transition-colors',
-                errors.title && 'border-red-500'
-              )}
-            />
-            {errors.title && <p className="text-red-400 text-sm mt-2">{errors.title.message}</p>}
-          </div>
+        {/* Description */}
+        <div>
+          <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+            Description
+          </label>
+          <textarea
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            placeholder="Add details about this task..."
+            rows={4}
+            className={cn(inputClass, 'resize-none')}
+          />
+        </div>
 
+        {/* Grid: Priority + Status */}
+        <div className="grid grid-cols-2 gap-4">
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <AlignLeft className="w-4 h-4 text-[var(--text-muted)]" />
-              <span className="text-sm text-[var(--text-muted)]">Description</span>
-            </div>
-            <textarea
-              {...register('description')}
-              placeholder="Add more context, acceptance criteria, or notes..."
-              rows={4}
-              className="w-full bg-white/[0.03] border border-[var(--border)]10 rounded-xl px-4 py-3
-                text-sm text-[var(--text-primary)] placeholder:text-slate-600 resize-none
-                focus:outline-none focus:ring-2 focus:ring-indigo-500/50 hover:border-[var(--border)]20 transition-all"
-            />
-          </div>
-
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-4 h-4 rounded-full bg-gradient-to-br from-amber-400 to-red-500" />
-              <span className="text-sm text-[var(--text-muted)]">Priority</span>
-            </div>
-            <div className="grid grid-cols-4 gap-2">
+            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+              Priority
+            </label>
+            <select
+              value={priority}
+              onChange={e => setPriority(e.target.value)}
+              className={inputClass}
+            >
               {PRIORITIES.map(p => (
-                <button key={p.value} type="button"
-                  onClick={() => { setSelectedPriority(p.value); setValue('priority', p.value as any) }}
-                  className={cn(
-                    'flex items-center gap-2 px-3 py-2.5 rounded-xl border text-sm font-medium transition-all',
-                    selectedPriority === p.value
-                      ? 'border-indigo-500/50 bg-indigo-500/10 text-[var(--text-primary)]'
-                      : 'border-[var(--border)]10 bg-white/[0.02] text-[var(--text-secondary)] hover:border-[var(--border)]20 hover:text-[var(--text-primary)]'
-                  )}>
-                  <div className={cn('w-2 h-2 rounded-full', p.dot)} />
-                  {p.label}
-                </button>
+                <option key={p.value} value={p.value}>{p.label}</option>
               ))}
-            </div>
+            </select>
           </div>
+          <div>
+            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+              Status
+            </label>
+            <select
+              value={status}
+              onChange={e => setStatus(e.target.value)}
+              className={inputClass}
+            >
+              {STATUSES.map(s => (
+                <option key={s.value} value={s.value}>{s.label}</option>
+              ))}
+            </select>
+          </div>
+        </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="flex items-center gap-2 text-sm text-[var(--text-muted)] mb-2">
-                <Clock className="w-4 h-4" />Status
+        {/* Grid: Assignee + Project */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+                Assignee
               </label>
-              <div className="relative">
-                <select {...register('status')}
-                  className="w-full appearance-none bg-white/[0.04] border border-[var(--border)]10 rounded-xl
-                    px-4 py-2.5 pr-8 text-sm text-[var(--text-primary)] focus:outline-none
-                    focus:ring-2 focus:ring-indigo-500/50 hover:border-[var(--border)]20 transition-all cursor-pointer">
-                  {STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)] pointer-events-none" />
-              </div>
+              <button
+                type="button"
+                onClick={getSuggestion}
+                disabled={suggesting}
+                className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border transition hover:opacity-80 disabled:opacity-50"
+                style={{
+                  background: 'var(--bg-elevated)',
+                  borderColor: 'var(--border)',
+                  color: 'var(--primary)',
+                }}
+              >
+                {suggesting ? (
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                ) : (
+                  <Sparkles className="w-3 h-3" />
+                )}
+                Smart assign
+              </button>
             </div>
-            <div>
-              <label className="flex items-center gap-2 text-sm text-[var(--text-muted)] mb-2">
-                <Calendar className="w-4 h-4" />Due date
-              </label>
-              <input {...register('dueDate')} type="date"
-                className="w-full bg-white/[0.04] border border-[var(--border)]10 rounded-xl px-4 py-2.5
-                  text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500/50
-                  hover:border-[var(--border)]20 transition-all [color-scheme:dark]" />
-            </div>
-            <div>
-              <label className="flex items-center gap-2 text-sm text-[var(--text-muted)] mb-2">
-                <Clock className="w-4 h-4" />Est. hours
-              </label>
-              <input {...register('estimatedHours')} type="number" min="0.5" step="0.5" placeholder="e.g. 4"
-                className="w-full bg-white/[0.04] border border-[var(--border)]10 rounded-xl px-4 py-2.5
-                  text-sm text-[var(--text-primary)] placeholder:text-slate-600 focus:outline-none
-                  focus:ring-2 focus:ring-indigo-500/50 hover:border-[var(--border)]20 transition-all" />
-            </div>
-          </div>
+            <select
+              value={assignedTo}
+              onChange={e => setAssignedTo(e.target.value)}
+              className={inputClass}
+            >
+              {members.map(m => (
+                <option key={m.id} value={m.id}>
+                  {m.full_name} {m.id === currentUserId ? '(You)' : ''}
+                </option>
+              ))}
+            </select>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="flex items-center gap-2 text-sm text-[var(--text-muted)] mb-2">
-                <FolderKanban className="w-4 h-4" />Project
-              </label>
-              <div className="relative">
-                <select {...register('projectId')}
-                  className="w-full appearance-none bg-white/[0.04] border border-[var(--border)]10 rounded-xl
-                    px-4 py-2.5 pr-8 text-sm text-[var(--text-primary)] focus:outline-none
-                    focus:ring-2 focus:ring-indigo-500/50 hover:border-[var(--border)]20 transition-all cursor-pointer">
-                  <option value="">No project</option>
-                  {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)] pointer-events-none" />
+            {/* Suggestion display */}
+            {suggestion && (
+              <div
+                className="flex items-start gap-2 p-3 rounded-xl text-xs mt-2"
+                style={{
+                  background: 'rgba(99,102,241,0.06)',
+                  borderColor: 'rgba(99,102,241,0.2)',
+                  border: '1px solid',
+                }}
+              >
+                <Sparkles className="w-3.5 h-3.5 text-indigo-500 shrink-0 mt-0.5" />
+                <p style={{ color: 'var(--text-secondary)' }}>{suggestion.reason}</p>
               </div>
-            </div>
-            <div>
-              <label className="flex items-center gap-2 text-sm text-[var(--text-muted)] mb-2">
-                <User className="w-4 h-4" />Assigned to
-              </label>
-              <div className="relative">
-                <select {...register('assignedTo')}
-                  className="w-full appearance-none bg-white/[0.04] border border-[var(--border)]10 rounded-xl
-                    px-4 py-2.5 pr-8 text-sm text-[var(--text-primary)] focus:outline-none
-                    focus:ring-2 focus:ring-indigo-500/50 hover:border-[var(--border)]20 transition-all cursor-pointer">
-                  {members.map(m => <option key={m.id} value={m.id}>{m.full_name}</option>)}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)] pointer-events-none" />
-              </div>
-            </div>
+            )}
           </div>
+          <div>
+            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+              Project
+            </label>
+            <select
+              value={projectId}
+              onChange={e => setProjectId(e.target.value)}
+              className={inputClass}
+            >
+              <option value="">No project</option>
+              {projects.map(p => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="flex items-center gap-2 text-sm text-[var(--text-muted)] mb-2">
-                <Tag className="w-4 h-4" />Category
-              </label>
-              <div className="relative">
-                <select {...register('category')}
-                  className="w-full appearance-none bg-white/[0.04] border border-[var(--border)]10 rounded-xl
-                    px-4 py-2.5 pr-8 text-sm text-[var(--text-primary)] focus:outline-none
-                    focus:ring-2 focus:ring-indigo-500/50 hover:border-[var(--border)]20 transition-all cursor-pointer">
-                  <option value="">No category</option>
-                  {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)] pointer-events-none" />
-              </div>
-            </div>
-            <div>
-              <label className="flex items-center gap-2 text-sm text-[var(--text-muted)] mb-2">
-                <Tag className="w-4 h-4" />Tags
-              </label>
-              <input {...register('tags')} placeholder="design, urgent, client (comma separated)"
-                className="w-full bg-white/[0.04] border border-[var(--border)]10 rounded-xl px-4 py-2.5
-                  text-sm text-[var(--text-primary)] placeholder:text-slate-600 focus:outline-none
-                  focus:ring-2 focus:ring-indigo-500/50 hover:border-[var(--border)]20 transition-all" />
-            </div>
+        {/* Grid: Due date + Estimate */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+              Due date
+            </label>
+            <input
+              type="date"
+              value={dueDate}
+              onChange={e => setDueDate(e.target.value)}
+              className={inputClass}
+            />
           </div>
+          <div>
+            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+              Est. hours
+            </label>
+            <input
+              type="number"
+              value={estimatedHours}
+              onChange={e => setEstimatedHours(e.target.value)}
+              placeholder="e.g. 2.5"
+              min="0"
+              step="0.5"
+              className={inputClass}
+            />
+          </div>
+        </div>
 
-          <div className="flex items-center gap-3 pt-4 border-t border-[var(--border)][0.06]">
-            <Button type="submit" variant="primary" size="md" loading={isSubmitting}
-              className="flex-1 sm:flex-none sm:px-8">
-              {isSubmitting ? 'Creating...' : 'Create Task'}
-            </Button>
-            <Link href="/tasks">
-              <Button type="button" variant="ghost" size="md">Cancel</Button>
-            </Link>
+        {/* Category + Tags */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+              Category
+            </label>
+            <input
+              value={category}
+              onChange={e => setCategory(e.target.value)}
+              placeholder="e.g. Development"
+              className={inputClass}
+            />
           </div>
-        </form>
-      </motion.div>
+          <div>
+            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>
+              Tags
+            </label>
+            <div className="flex gap-2">
+              <input
+                placeholder="Add tag"
+                onKeyDown={e => {
+                  if (e.key === 'Enter' || e.key === ',') {
+                    e.preventDefault()
+                    const input = e.currentTarget
+                    addTag(input.value)
+                    input.value = ''
+                  }
+                }}
+                className={cn(inputClass, 'flex-1')}
+              />
+              <button
+                type="button"
+                onClick={e => {
+                  const input = e.currentTarget.previousElementSibling as HTMLInputElement
+                  if (input) {
+                    addTag(input.value)
+                    input.value = ''
+                  }
+                }}
+                className="px-4 rounded-xl border transition hover:bg-[var(--bg-elevated)]"
+                style={{ borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
+            {tags.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {tags.map(tag => (
+                  <span
+                    key={tag}
+                    className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs"
+                    style={{
+                      background: 'rgba(99,102,241,0.1)',
+                      color: 'var(--primary)',
+                    }}
+                  >
+                    {tag}
+                    <button
+                      type="button"
+                      onClick={() => removeTag(tag)}
+                      className="hover:opacity-70"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-3 pt-4 border-t" style={{ borderColor: 'var(--border)' }}>
+          <Button
+            type="submit"
+            variant="primary"
+            loading={loading}
+            disabled={loading || !title.trim()}
+          >
+            {loading ? 'Creating...' : 'Create Task'}
+          </Button>
+          <Link href="/tasks">
+            <Button variant="ghost">Cancel</Button>
+          </Link>
+        </div>
+      </form>
     </div>
   )
 }

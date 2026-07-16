@@ -9,6 +9,7 @@ import {
   Plus, Search, LayoutGrid, List,
   Clock, AlertTriangle, CheckCircle2, Circle,
   ChevronDown, SlidersHorizontal, X,
+  Sparkles, FileText,
 } from 'lucide-react'
 import { cn, formatDate, getInitials } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -19,6 +20,8 @@ import { staggerItem } from '@/lib/motion'
 import { ToggleButton } from '@/components/ui/toggle-button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { toast } from 'sonner'
+import NLPTaskInput from '@/components/tasks/nlp-task-input'
+import MeetingNotesParser from '@/components/tasks/meeting-notes-parser'
 
 // ---------- dnd‑kit imports ----------
 import {
@@ -32,7 +35,7 @@ import { CSS } from '@dnd-kit/utilities'
 
 type ViewMode = 'list' | 'board'
 type SortKey = 'created_at' | 'due_date' | 'priority' | 'status'
-type DateFilter = 'all' | 'today' | 'week' | 'month' // <-- new type
+type DateFilter = 'all' | 'today' | 'week' | 'month'
 
 const PRIORITY_ORDER: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 }
 const STATUS_ORDER: Record<string, number> = { blocked: 0, in_progress: 1, review: 2, not_started: 3, done: 4 }
@@ -135,6 +138,10 @@ export default function TasksClient({ initialTasks, projects, members, currentUs
   // ---------- Date filter state ----------
   const [dateFilter, setDateFilter] = useState<DateFilter>('all')
 
+  // ---------- NLP / AI state ----------
+  const [showNLP, setShowNLP] = useState(false)
+  const [showMeetingParser, setShowMeetingParser] = useState(false)
+
   // ---------- Bulk selection ----------
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [bulkLoading, setBulkLoading] = useState(false)
@@ -213,6 +220,79 @@ export default function TasksClient({ initialTasks, projects, members, currentUs
     })
   }
 
+  // ---------- NLP / AI handler functions ----------
+  async function createFromNLP(parsed: any) {
+    if (!parsed.title) {
+      toast.error('Task title is required')
+      return
+    }
+    try {
+      const res = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: parsed.title,
+          description: parsed.description || '',
+          priority: parsed.priority || 'medium',
+          dueDate: parsed.dueDate || null,
+          assignedTo: parsed.assigneeId || currentUser?.id || null,
+        }),
+      })
+      if (res.ok) {
+        const { task } = await res.json()
+        setTasks(prev => [task, ...prev])
+        setShowNLP(false)
+        toast.success('Task created')
+      } else {
+        const error = await res.json()
+        toast.error(error.error || 'Failed to create task')
+      }
+    } catch {
+      toast.error('Network error. Try again.')
+    }
+  }
+
+  async function createFromMeeting(parsedTasks: any[]) {
+    if (!parsedTasks || parsedTasks.length === 0) {
+      toast.error('No tasks to create')
+      return
+    }
+
+    try {
+      const results = await Promise.allSettled(
+        parsedTasks.map(task =>
+          fetch('/api/tasks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              title: task.title,
+              priority: task.priority || 'medium',
+              dueDate: task.dueDate || null,
+              assignedTo: task.assigneeId || currentUser?.id || null,
+              description: task.context || task.description || '',
+            }),
+          }).then(r => r.json())
+        )
+      )
+
+      const created = results
+        .filter((r): r is PromiseFulfilledResult<any> => r.status === 'fulfilled')
+        .map(r => r.value.task)
+        .filter(Boolean)
+
+      if (created.length > 0) {
+        setTasks(prev => [...created, ...prev])
+        toast.success(`${created.length} task${created.length > 1 ? 's' : ''} created from meeting notes`)
+      } else {
+        toast.error('Failed to create tasks from meeting notes')
+      }
+
+      setShowMeetingParser(false)
+    } catch {
+      toast.error('Network error. Try again.')
+    }
+  }
+
   // ---------- Filtering & sorting (with date filter) ----------
   const filteredTasks = useMemo(() => {
     let result = tasks.filter(t => {
@@ -256,7 +336,7 @@ export default function TasksClient({ initialTasks, projects, members, currentUs
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     })
     return result
-  }, [tasks, search, filterStatus, filterPriority, sortBy, dateFilter]) // added dateFilter to deps
+  }, [tasks, search, filterStatus, filterPriority, sortBy, dateFilter])
 
   const stats = useMemo(() => ({
     total: tasks.length,
@@ -279,10 +359,66 @@ export default function TasksClient({ initialTasks, projects, members, currentUs
             {stats.overdue > 0 && <span className="text-amber-400 ml-2">· {stats.overdue} overdue</span>}
           </p>
         </div>
-        <Link href="/tasks/new">
-          <Button variant="primary" icon={<Plus className="w-4 h-4" />}>New Task</Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowNLP(!showNLP)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium border transition hover:opacity-80"
+            style={{
+              background: 'var(--bg-elevated)',
+              borderColor: 'var(--border)',
+              color: 'var(--primary)',
+            }}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            AI create
+          </button>
+          <button
+            onClick={() => setShowMeetingParser(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium border transition hover:opacity-80"
+            style={{
+              background: 'var(--bg-elevated)',
+              borderColor: 'var(--border)',
+              color: 'var(--text-secondary)',
+            }}
+          >
+            <FileText className="w-3.5 h-3.5" />
+            From meeting
+          </button>
+          <Link href="/tasks/new">
+            <Button variant="primary" icon={<Plus className="w-4 h-4" />}>New Task</Button>
+          </Link>
+        </div>
       </div>
+
+      {/* NLP Input Panel */}
+      <AnimatePresence>
+        {showNLP && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+            className="overflow-hidden"
+          >
+            <div className="mb-4">
+              <NLPTaskInput
+                onConfirm={createFromNLP}
+                onClose={() => setShowNLP(false)}
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Meeting Notes Parser Modal */}
+      <AnimatePresence>
+        {showMeetingParser && (
+          <MeetingNotesParser
+            onCreateTasks={createFromMeeting}
+            onClose={() => setShowMeetingParser(false)}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Toolbar */}
       <div className="flex items-center gap-3 flex-wrap">

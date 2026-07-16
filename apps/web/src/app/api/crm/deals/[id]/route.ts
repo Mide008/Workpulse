@@ -48,6 +48,7 @@ export const PATCH = withAuth(async (req: NextRequest, ctx) => {
 
   if (error) return Response.json({ error: error.message }, { status: 500 })
 
+  // ---- Log activity ----
   if (body.stage && body.stage !== (current as any)?.stage) {
     const action = body.stage === 'won' ? 'deal_won' : body.stage === 'lost' ? 'deal_lost' : 'deal_stage_changed'
     await logActivity({
@@ -59,6 +60,18 @@ export const PATCH = withAuth(async (req: NextRequest, ctx) => {
       action,
       metadata: { stage: body.stage, actorName: ctx.userFullName },
     })
+
+    // ---- Slack notification for deal won ----
+    if (body.stage === 'won') {
+      const { notifySlack } = await import('@/lib/integrations/slack')
+      const dealTitle = (current as any)?.title ?? 'Deal'
+      await notifySlack(
+        ctx.workspaceId,
+        'deal_won',
+        `🎉 Deal won: "${dealTitle}" by ${ctx.userFullName}`,
+        '/crm/pipeline'
+      )
+    }
   }
 
   return Response.json({ deal })

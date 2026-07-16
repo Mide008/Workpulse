@@ -139,6 +139,17 @@ export const PATCH = withAuth(async (req: NextRequest, ctx) => {
       metadata: { prevStatus: current?.status, newStatus: d.status, actorName: ctx.userFullName },
       notifyUserIds: notifyUsers,
     })
+
+    // ---- Slack notification for task completion ----
+    if (d.status === 'done') {
+      const { notifySlack } = await import('@/lib/integrations/slack')
+      await notifySlack(
+        ctx.workspaceId,
+        'task_completed',
+        `✅ Task "${t.title}" marked as complete by ${ctx.userFullName}`,
+        `/tasks/${id}`
+      )
+    }
   }
 
   // Blocker added
@@ -153,6 +164,15 @@ export const PATCH = withAuth(async (req: NextRequest, ctx) => {
       metadata: { reason: d.blockerReason, actorName: ctx.userFullName },
       notifyUserIds: notifyUsers,
     })
+
+    // ---- Slack notification for blocker added ----
+    const { notifySlack } = await import('@/lib/integrations/slack')
+    await notifySlack(
+      ctx.workspaceId,
+      'blocker_added',
+      `🚫 Task "${t.title}" is now blocked: ${d.blockerReason}`,
+      `/tasks/${id}`
+    )
   }
 
   // Blocker resolved

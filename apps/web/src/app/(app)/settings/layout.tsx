@@ -17,7 +17,10 @@ export default async function SettingsLayout({ children }: { children: React.Rea
   const tabs = [
     { href: '/settings/workspace', label: 'Workspace' },
     { href: '/settings/profile', label: 'Profile' },
-    ...(user.roleLevel <= 1 ? [{ href: '/settings/billing', label: 'Billing & Plan' }] : []),
+    ...(user.roleLevel <= 1 ? [
+      { href: '/settings/billing', label: 'Billing & Plan' },
+      { href: '/settings/integrations', label: 'Integrations' }, // <-- ADDED
+    ] : []),
   ]
 
   return (

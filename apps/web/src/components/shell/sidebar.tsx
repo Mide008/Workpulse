@@ -20,6 +20,9 @@ import {
   Building2,
   Activity,
   CreditCard,
+  Bot,
+  Shield,
+  UserCog,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { WorkPulseLogo } from '@/components/ui/logo'
@@ -37,6 +40,7 @@ const NAV = [
   { href: '/team', label: 'Team', icon: Users, minLevel: 2 },
   { href: '/goals', label: 'Goals', icon: Target },
   { href: '/chat', label: 'Chat', icon: MessageSquare },
+  { href: '/agents', label: 'Agents', icon: Bot, minLevel: 2 },
 ]
 
 const CRM_NAV = [
@@ -44,6 +48,11 @@ const CRM_NAV = [
   { href: '/crm/contacts', label: 'Contacts', icon: Users },
   { href: '/crm/companies', label: 'Companies', icon: Building2 },
   { href: '/crm/activities', label: 'Activities', icon: Activity },
+]
+
+const ADMIN_NAV = [
+  { href: '/audit', label: 'Audit Trail', icon: Shield, minLevel: 1 },
+  { href: '/hr', label: 'HR', icon: UserCog, minLevel: 2 },
 ]
 
 interface SidebarProps {
@@ -65,8 +74,10 @@ interface SidebarProps {
 export default function Sidebar({ user, open, onClose }: SidebarProps) {
   const pathname = usePathname()
   const filteredNav = NAV.filter((item) => !item.minLevel || user.roleLevel <= item.minLevel)
+  const filteredAdminNav = ADMIN_NAV.filter((item) => !item.minLevel || user.roleLevel <= item.minLevel)
 
   const showCRM = (user.plan === 'pro' || user.plan === 'enterprise') && user.roleLevel <= 2
+  const showAdmin = filteredAdminNav.length > 0
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -179,6 +190,44 @@ export default function Sidebar({ user, open, onClose }: SidebarProps) {
                         {item.label}
                       </div>
                     </Link>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* Administration Section */}
+            {showAdmin && (
+              <div className="mt-6 pt-5 border-t" style={{ borderColor: 'var(--border)' }}>
+                <p className="text-[10px] font-semibold uppercase tracking-widest px-3 mb-2"
+                  style={{ color: 'var(--text-muted)' }}>
+                  Administration
+                </p>
+                {filteredAdminNav.map((item) => {
+                  const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+                  return (
+                    <SimpleTooltip key={item.href} content={item.label} side="right">
+                      <Link href={item.href} onClick={onClose} className="block">
+                        <motion.div
+                          whileHover={{ scale: 1.01, x: 2 }}
+                          whileTap={{ scale: 0.99 }}
+                          className={cn(
+                            'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
+                            isActive ? '' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-overlay)]'
+                          )}
+                          style={
+                            isActive
+                              ? {
+                                  background: `color-mix(in srgb, var(--primary, #6366F1) 12%, transparent)`,
+                                  color: 'var(--primary, #6366F1)',
+                                }
+                              : undefined
+                          }
+                        >
+                          <item.icon className="w-4 h-4 shrink-0" />
+                          {item.label}
+                        </motion.div>
+                      </Link>
+                    </SimpleTooltip>
                   )
                 })}
               </div>
