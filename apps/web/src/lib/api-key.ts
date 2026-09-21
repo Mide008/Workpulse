@@ -33,7 +33,8 @@ export async function validateApiKey(key: string): Promise<{
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
 
-  const { data: apiKey } = await adminClient
+  // Cast to any because 'api_keys' table is not in Supabase type definitions
+  const { data: apiKey } = await (adminClient as any)
     .from('api_keys')
     .select('workspace_id, created_by, scopes, expires_at')
     .eq('key_hash', hash)
@@ -43,7 +44,8 @@ export async function validateApiKey(key: string): Promise<{
   if (apiKey.expires_at && new Date(apiKey.expires_at) < new Date()) return { valid: false }
 
   // Update last used
-  await adminClient.from('api_keys')
+  await (adminClient as any)
+    .from('api_keys')
     .update({ last_used_at: new Date().toISOString() })
     .eq('key_hash', hash)
 
