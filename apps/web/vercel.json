@@ -6,7 +6,7 @@
     },
     {
       "path": "/api/agents/blocker-escalation",
-      "schedule": "0 */6 * * *"
+      "schedule": "0 9 * * *"
     },
     {
       "path": "/api/agents/goal-risk",
