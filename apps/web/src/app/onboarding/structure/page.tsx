@@ -1,84 +1,59 @@
-// app/onboarding/structure/page.tsx
+// apps/web/src/app/onboarding/structure/page.tsx
 'use client'
-
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Trash2, Loader2, ArrowRight } from 'lucide-react'
+import { AnimatePresence, motion } from 'framer-motion'
+import { ArrowRight, Building2, ChevronRight, Loader2, Plus, Trash2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
-import { OnboardingLayout } from '@/components/onboarding/OnboardingLayout'
-import { AuthButton } from '@/components/auth/AuthButton'
+import { ease } from '@/lib/motion'
 
-interface Department { name: string; id?: string }
+interface Department { name: string }
 interface Team { name: string; departmentIndex: number }
+
+const SUGGESTIONS = ['Operations', 'Sales', 'Marketing', 'Engineering', 'Finance', 'Human Resources', 'Customer Success', 'Projects']
+const inputCls = 'w-full h-11 px-4 rounded-xl border border-white/10 bg-white/5 text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all text-base'
 
 export default function StructurePage() {
   const router = useRouter()
   const [departments, setDepartments] = useState<Department[]>([{ name: '' }])
-  const [teams, setTeams] = useState<Team[]>([{ name: '', departmentIndex: 0 }])
+  const [teams, setTeams] = useState<Team[]>([])
   const [saving, setSaving] = useState(false)
   const supabase = createClient()
 
-  function addDepartment() {
-    setDepartments([...departments, { name: '' }])
+  function addSuggestion(name: string) {
+    if (departments.some(d => d.name.toLowerCase() === name.toLowerCase())) return
+    const empty = departments.findIndex(d => !d.name.trim())
+    if (empty >= 0) setDepartments(departments.map((d, i) => (i === empty ? { name } : d)))
+    else setDepartments([...departments, { name }])
   }
-  function removeDepartment(index: number) {
-    setDepartments(departments.filter((_, i) => i !== index))
-    setTeams(teams.filter((t) => t.departmentIndex !== index))
-  }
-  function updateDepartment(index: number, name: string) {
-    const updated = [...departments]
-    updated[index].name = name
-    setDepartments(updated)
-  }
-  function addTeam() {
-    setTeams([...teams, { name: '', departmentIndex: 0 }])
-  }
-  function removeTeam(index: number) {
-    setTeams(teams.filter((_, i) => i !== index))
+  function removeDept(di: number) {
+    setDepartments(departments.filter((_, i) => i !== di))
+    setTeams(teams.filter(t => t.departmentIndex !== di).map(t => ({ ...t, departmentIndex: t.departmentIndex > di ? t.departmentIndex - 1 : t.departmentIndex })))
   }
 
   async function handleSave() {
-    const validDepts = departments.filter((d) => d.name.trim())
-    if (validDepts.length === 0) {
-      router.push('/onboarding/invite')
-      return
-    }
-
+    const valid = departments.map((d, i) => ({ ...d, i })).filter(d => d.name.trim())
+    if (valid.length === 0) { router.push('/onboarding/invite'); return }
     setSaving(true)
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Not authenticated')
-
-      const { data: profile } = await supabase
-        .from('users')
-        .select('workspace_id')
-        .eq('id', user.id)
-        .single()
-
-      const workspaceId = (profile as { workspace_id: string } | null)?.workspace_id
+      const { data: profile } = await supabase.from('users').select('workspace_id').eq('id', user.id).single()
+      const workspaceId = (profile as any)?.workspace_id
       if (!workspaceId) throw new Error('No workspace found')
 
-      const { data: createdDepts } = await supabase
-        .from('departments')
-        .insert(validDepts.map((d) => ({ name: d.name, workspace_id: workspaceId })))
-        .select('id, name')
+      const { data: created, error } = await supabase
+        .from('departments').insert(valid.map(d => ({ name: d.name.trim(), workspace_id: workspaceId }))).select('id, name')
+      if (error) throw error
 
-      const deptMap = new Map(
-        (createdDepts as { id: string; name: string }[] | null)?.map((d, i) => [i, d.id]) ?? []
-      )
+      const idByOriginal = new Map<number, string>()
+      ;(created as any[] | null)?.forEach((row, pos) => idByOriginal.set(valid[pos].i, row.id))
 
-      const validTeams = teams.filter((t) => t.name.trim())
+      const validTeams = teams.filter(t => t.name.trim())
       if (validTeams.length > 0) {
-        await supabase.from('teams').insert(
-          validTeams.map((t) => ({
-            name: t.name,
-            workspace_id: workspaceId,
-            department_id: deptMap.get(t.departmentIndex) ?? null,
-          }))
-        )
+        await supabase.from('teams').insert(validTeams.map(t => ({ name: t.name.trim(), workspace_id: workspaceId, department_id: idByOriginal.get(t.departmentIndex) ?? null })))
       }
-
       toast.success('Structure saved')
       router.push('/onboarding/invite')
     } catch (err) {
@@ -90,125 +65,62 @@ export default function StructurePage() {
   }
 
   return (
-    <OnboardingLayout>
-      <div className="mb-6">
-        <h1 className="text-xl font-bold text-[var(--text-primary)]">Set up your structure</h1>
-        <p className="text-[var(--text-secondary)] text-sm mt-1">
-          Add departments and teams. You can always add more later.
-        </p>
+    <div>
+      <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white mb-2">Map your organisation</h1>
+      <p className="text-base mb-7 text-slate-400">Add departments and the teams inside them. This is optional and easy to change later.</p>
+
+      <div className="flex flex-wrap gap-2 mb-6" aria-label="Quick add departments">
+        {SUGGESTIONS.map(s => (
+          <motion.button key={s} type="button" whileTap={{ scale: 0.94 }} whileHover={{ y: -2 }} onClick={() => addSuggestion(s)}
+            className="h-10 px-4 rounded-full text-sm font-semibold text-white inline-flex items-center gap-1.5 bg-indigo-500/10 border border-indigo-500/30 hover:bg-indigo-500/20 transition-colors">
+            <Plus className="w-3.5 h-3.5" />{s}
+          </motion.button>
+        ))}
       </div>
 
-      <div className="space-y-6">
-        {/* Departments */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-[var(--text-primary)] font-semibold">Departments</h2>
-            <button
-              onClick={addDepartment}
-              className="flex items-center gap-1.5 text-sm text-[var(--primary)] hover:opacity-80 transition"
-            >
-              <Plus className="w-4 h-4" />
-              Add department
-            </button>
-          </div>
-          <div className="space-y-2">
-            {departments.map((dept, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <input
-                  value={dept.name}
-                  onChange={(e) => updateDepartment(i, e.target.value)}
-                  placeholder={`e.g. ${['Sales', 'Operations', 'Technology', 'Finance'][i % 4]}`}
-                  className="flex-1 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-xl px-4 py-2.5
-                    text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none
-                    focus:ring-2 focus:ring-[var(--primary)]/50 transition text-sm"
-                />
+      <div className="space-y-3 mb-4">
+        <AnimatePresence initial={false}>
+          {departments.map((dept, di) => (
+            <motion.div key={di} layout initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0, marginBottom: 0 }} transition={{ duration: 0.3, ease: ease.out }}
+              className="rounded-2xl p-4 space-y-3 bg-white/5 border border-white/10">
+              <div className="flex items-center gap-3">
+                <span className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-indigo-500/20"><Building2 className="w-4 h-4 text-indigo-300" /></span>
+                <input value={dept.name} onChange={e => setDepartments(departments.map((d, i) => (i === di ? { name: e.target.value } : d)))} placeholder={`Department ${di + 1}`} aria-label={`Department ${di + 1} name`} className={inputCls} />
                 {departments.length > 1 && (
-                  <button
-                    onClick={() => removeDepartment(i)}
-                    className="p-2 text-[var(--text-muted)] hover:text-red-400 transition"
-                  >
-                    <Trash2 className="w-4 h-4" />
+                  <button type="button" onClick={() => removeDept(di)} aria-label="Remove department" className="w-11 h-11 shrink-0 rounded-xl flex items-center justify-center hover:bg-red-500/20 transition-colors">
+                    <Trash2 className="w-4 h-4 text-red-400" />
                   </button>
                 )}
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Teams */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-[var(--text-primary)] font-semibold">Teams</h2>
-            <button
-              onClick={addTeam}
-              className="flex items-center gap-1.5 text-sm text-[var(--primary)] hover:opacity-80 transition"
-            >
-              <Plus className="w-4 h-4" />
-              Add team
-            </button>
-          </div>
-          <div className="space-y-2">
-            {teams.map((team, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <input
-                  value={team.name}
-                  onChange={(e) => {
-                    const updated = [...teams]
-                    updated[i].name = e.target.value
-                    setTeams(updated)
-                  }}
-                  placeholder="e.g. Frontend, Lettings, Claims"
-                  className="flex-1 bg-[var(--bg-elevated)] border border-[var(--border)] rounded-xl px-4 py-2.5
-                    text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none
-                    focus:ring-2 focus:ring-[var(--primary)]/50 transition text-sm"
-                />
-                <select
-                  value={team.departmentIndex}
-                  onChange={(e) => {
-                    const updated = [...teams]
-                    updated[i].departmentIndex = Number(e.target.value)
-                    setTeams(updated)
-                  }}
-                  className="bg-[var(--bg-elevated)] border border-[var(--border)] rounded-xl px-3 py-2.5
-                    text-[var(--text-primary)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/50"
-                >
-                  {departments.map((d, di) => (
-                    <option key={di} value={di}>
-                      {d.name || `Department ${di + 1}`}
-                    </option>
-                  ))}
-                </select>
-                {teams.length > 1 && (
-                  <button
-                    onClick={() => removeTeam(i)}
-                    className="p-2 text-[var(--text-muted)] hover:text-red-400 transition"
-                  >
-                    <Trash2 className="w-4 h-4" />
+              {teams.map((t, ti) => t.departmentIndex === di && (
+                <div key={ti} className="flex items-center gap-2 pl-4 sm:pl-12">
+                  <ChevronRight className="w-4 h-4 shrink-0 text-slate-500" />
+                  <input value={t.name} onChange={e => setTeams(teams.map((x, i) => (i === ti ? { ...x, name: e.target.value } : x)))} placeholder="Team name" aria-label="Team name" className={inputCls} />
+                  <button type="button" onClick={() => setTeams(teams.filter((_, i) => i !== ti))} aria-label="Remove team" className="w-11 h-11 shrink-0 rounded-xl flex items-center justify-center hover:bg-red-500/20 transition-colors">
+                    <Trash2 className="w-4 h-4 text-red-400" />
                   </button>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex gap-3">
-          <button
-            onClick={() => router.push('/onboarding/invite')}
-            className="flex-1 border border-[var(--border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]
-              hover:border-[var(--border-strong)] font-medium py-2.5 rounded-xl transition text-sm"
-          >
-            Skip for now
-          </button>
-          <AuthButton
-            variant="primary"
-            className="flex-1"
-            onClick={handleSave}
-            loading={saving}
-          >
-            {saving ? 'Saving...' : 'Continue'}
-          </AuthButton>
-        </div>
+                </div>
+              ))}
+              <button type="button" onClick={() => setTeams([...teams, { name: '', departmentIndex: di }])} className="pl-4 sm:pl-12 text-sm font-semibold inline-flex items-center gap-1.5 hover:underline min-h-[40px] text-indigo-300 transition-colors">
+                <Plus className="w-4 h-4" />Add team
+              </button>
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
-    </OnboardingLayout>
+
+      <button type="button" onClick={() => setDepartments([...departments, { name: '' }])}
+        className="w-full h-12 rounded-xl border-2 border-dashed border-white/20 text-sm font-semibold text-slate-300 hover:bg-white/5 hover:border-indigo-400/60 transition-all flex items-center justify-center gap-2 mb-8">
+        <Plus className="w-4 h-4" />Add department
+      </button>
+
+      <div className="flex gap-3">
+        <button type="button" onClick={() => router.push('/onboarding/invite')} className="h-12 px-6 rounded-xl border border-white/20 text-base font-semibold text-white hover:bg-white/10 transition-colors">Skip</button>
+        <motion.button type="button" disabled={saving} onClick={handleSave} whileTap={{ scale: 0.97 }}
+          className="btn-shine flex-1 h-12 rounded-xl text-base font-bold text-white flex items-center justify-center gap-2 disabled:opacity-60 bg-gradient-to-r from-indigo-500 to-violet-500 shadow-[0_10px_28px_rgba(99,102,241,.4)]">
+          {saving ? <><Loader2 className="w-4 h-4 animate-spin" />Saving…</> : <>Continue <ArrowRight className="w-4 h-4" /></>}
+        </motion.button>
+      </div>
+    </div>
   )
 }

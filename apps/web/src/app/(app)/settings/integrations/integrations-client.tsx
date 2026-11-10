@@ -303,7 +303,7 @@ export default function IntegrationsClient({ integrations, workspaceId }: {
         </div>
       </motion.div>
 
-      {/* AI Agents status */}
+      {/* Agents status */}
       <motion.div
         variants={staggerItem}
         className="rounded-2xl border p-6"
@@ -315,7 +315,7 @@ export default function IntegrationsClient({ integrations, workspaceId }: {
             <Bot className="w-5 h-5" />
           </div>
           <div>
-            <h2 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>AI Agents</h2>
+            <h2 className="font-semibold text-sm" style={{ color: 'var(--text-primary)' }}>Agents</h2>
             <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
               Automated agents running in the background on your workspace.
             </p>

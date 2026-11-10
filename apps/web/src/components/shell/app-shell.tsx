@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { usePathname } from 'next/navigation'
 import Sidebar from './sidebar'
+import PageLoader from '@/components/motion/page-loader'
 import Header from './header'
 import MobileNav from './mobile-nav'
 import KeyboardShortcuts from './keyboard-shortcuts'
@@ -47,7 +48,7 @@ export default function AppShell({ user, children }: AppShellProps) {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <Header user={user} onMenuClick={() => setSidebarOpen(true)} />
         
-        <main className="flex-1 overflow-y-auto transition-colors duration-200" style={{ background: 'var(--bg-base)' }}>
+        <main id="main-content" className="flex-1 overflow-y-auto transition-colors duration-200" style={{ background: 'var(--bg-base)' }}>
           <AnimatePresence mode="wait">
             <motion.div
               key={pathname}

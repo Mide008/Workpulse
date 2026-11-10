@@ -41,6 +41,9 @@ importers:
       groq-sdk:
         specifier: ^1.2.0
         version: 1.2.0
+      gsap:
+        specifier: ^3.15.0
+        version: 3.15.0
       html-to-image:
         specifier: ^1.11.13
         version: 1.11.13
@@ -943,6 +946,9 @@ packages:
   groq-sdk@1.2.0:
     resolution: {integrity: sha512-pMhSYXWcjiqvbOeKdv2zjci1BYjGdp04a40hnmQmJpKJyB6oa+gRndAqE128gwR0NLgYO+Wt1fIF46KNHcplsw==}
     hasBin: true
+
+  gsap@3.15.0:
+    resolution: {integrity: sha512-dMW4CWBTUK1AEEDeZc1g4xpPGIrSf9fJF960qbTZmN/QwZIWY5wgliS6JWl9/25fpTGJrMRtSjGtOmPnfjZB+A==}
 
   hoist-non-react-statics@3.3.2:
     resolution: {integrity: sha512-/gGivxi8JPKWNm/W0jSmzcMPpfpPLc3dY/6GxhX2hQ9iGj3aDfklV4ET7NjKpSinLpJ5vafa9iiGIEZg10SfBw==}
@@ -2025,6 +2031,8 @@ snapshots:
   graceful-fs@4.2.11: {}
 
   groq-sdk@1.2.0: {}
+
+  gsap@3.15.0: {}
 
   hoist-non-react-statics@3.3.2:
     dependencies:

@@ -1,3 +1,4 @@
+// apps/web/src/components/providers.tsx
 'use client'
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -25,12 +26,16 @@ export default function Providers({ children }: { children: React.ReactNode }) {
           richColors
           toastOptions={{
             style: {
-              background: '#1e293b',
-              border: '1px solid rgba(255,255,255,0.08)',
-              color: '#f1f5f9',
-              borderRadius: '12px',
+              background: 'color-mix(in srgb, var(--bg-surface) 80%, transparent)',
+              backdropFilter: 'blur(16px) saturate(1.5)',
+              WebkitBackdropFilter: 'blur(16px) saturate(1.5)',
+              border: '1px solid var(--border-strong)',
+              color: 'var(--text-primary)',
+              borderRadius: '16px',
               fontSize: '14px',
+              boxShadow: '0 20px 40px -10px rgba(0,0,0,0.3)',
             },
+            className: 'font-sans',
           }}
         />
       </TooltipProvider>

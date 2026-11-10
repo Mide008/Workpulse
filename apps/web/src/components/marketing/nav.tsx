@@ -1,104 +1,71 @@
+// apps/web/src/components/marketing/nav.tsx
 'use client'
-
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, ChevronDown } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { AnimatePresence, motion, useMotionValueEvent, useScroll } from 'framer-motion'
+import { ArrowRight, Menu, X } from 'lucide-react'
 import { WorkPulseLogo } from '@/components/ui/logo'
+import { ease } from '@/lib/motion'
 
-const NAV_LINKS = [
-  { label: 'Features', href: '/#features' },
-  { label: 'Sectors', href: '/sectors' },
-  { label: 'Pricing', href: '/pricing' },
-  { label: 'About', href: '/about' },
+const LINKS: [string, string][] = [
+  ['Features', '/#features'], ['How it works', '/#how'], ['Sectors', '/#sectors'], ['Pricing', '/pricing'], ['Security', '/security'],
 ]
 
 export default function MarketingNav() {
+  const [open, setOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
-  const [mobileOpen, setMobileOpen] = useState(false)
-
+  const { scrollY } = useScroll()
+  useMotionValueEvent(scrollY, 'change', v => setScrolled(v > 12))
   useEffect(() => {
-    const handler = () => setScrolled(window.scrollY > 20)
-    window.addEventListener('scroll', handler, { passive: true })
-    return () => window.removeEventListener('scroll', handler)
-  }, [])
+    document.body.style.overflow = open ? 'hidden' : ''
+    return () => { document.body.style.overflow = '' }
+  }, [open])
 
   return (
-    <header className={cn(
-      'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
-      scrolled
-        ? 'bg-[var(--bg-surface)]/90 backdrop-blur-xl border-b border-[var(--border)][0.06] shadow-2xl shadow-black/20'
-        : 'bg-transparent'
-    )}>
-      <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+    <header className="fixed top-0 inset-x-0 z-50 px-3 sm:px-6 pt-3">
+      <motion.nav aria-label="Main"
+        initial={{ y: -40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.7, ease: ease.expo }}
+        className="mx-auto max-w-6xl h-14 sm:h-16 rounded-2xl px-4 sm:px-6 flex items-center justify-between transition-all duration-300"
+        style={{
+          background: scrolled ? 'rgba(2,6,23,.78)' : 'rgba(2,6,23,.35)',
+          border: `1px solid ${scrolled ? 'rgba(255,255,255,.12)' : 'rgba(255,255,255,.06)'}`,
+          backdropFilter: 'blur(18px) saturate(1.5)', WebkitBackdropFilter: 'blur(18px) saturate(1.5)',
+          boxShadow: scrolled ? '0 12px 40px rgba(0,0,0,.4)' : 'none',
+        }}>
         <WorkPulseLogo linkTo="/" />
-
-        {/* Desktop nav */}
-        <nav className="hidden md:flex items-center gap-1">
-          {NAV_LINKS.map(link => (
-            <Link key={link.href} href={link.href}
-              className="px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]
-                hover:bg-white/5 rounded-xl transition-all">
-              {link.label}
-            </Link>
+        <div className="hidden md:flex items-center gap-1">
+          {LINKS.map(([l, h]) => (
+            <Link key={l} href={h} className="px-3.5 py-2 rounded-lg text-sm font-semibold text-slate-200 hover:text-white hover:bg-white/10 transition-colors">{l}</Link>
           ))}
-        </nav>
-
-        <div className="hidden md:flex items-center gap-3">
-          <Link href="/login"
-            className="px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition">
-            Sign in
-          </Link>
-          {/* 🔧 Changed href to /signup */}
-          <Link href="/signup"
-            className="px-5 py-2.5 text-sm font-semibold text-[var(--text-primary)] bg-indigo-600
-              hover:bg-indigo-500 rounded-xl transition-all shadow-lg shadow-indigo-500/20
-              hover:shadow-indigo-500/30">
-            Get started free
+        </div>
+        <div className="hidden md:flex items-center gap-2">
+          <Link href="/login" className="px-4 py-2 rounded-lg text-sm font-semibold text-slate-200 hover:text-white hover:bg-white/10 transition-colors">Sign in</Link>
+          <Link href="/signup" className="btn-shine inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-indigo-500 to-violet-500 shadow-[0_6px_20px_rgba(99,102,241,.4)]">
+            Start free <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
-
-        {/* Mobile menu button */}
-        <button
-          onClick={() => setMobileOpen(!mobileOpen)}
-          className="md:hidden p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition"
-        >
-          {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        <button onClick={() => setOpen(v => !v)} className="md:hidden w-11 h-11 -mr-2 flex items-center justify-center rounded-xl text-white hover:bg-white/10"
+          aria-label={open ? 'Close menu' : 'Open menu'} aria-expanded={open}>
+          {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
-      </div>
+      </motion.nav>
 
-      {/* Mobile menu */}
       <AnimatePresence>
-        {mobileOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="md:hidden bg-[var(--bg-surface)]/95 backdrop-blur-xl border-b border-[var(--border)][0.06]"
-          >
-            <div className="px-6 py-4 space-y-1">
-              {NAV_LINKS.map(link => (
-                <Link key={link.href} href={link.href}
-                  onClick={() => setMobileOpen(false)}
-                  className="block px-4 py-3 text-sm text-slate-300 hover:text-[var(--text-primary)]
-                    hover:bg-white/5 rounded-xl transition">
-                  {link.label}
+        {open && (
+          <motion.div initial={{ opacity: 0, y: -12, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -12, scale: 0.98 }}
+            transition={{ duration: 0.25, ease: ease.out }}
+            className="md:hidden mx-auto max-w-6xl mt-2 rounded-2xl p-3"
+            style={{ background: 'rgba(2,6,23,.96)', border: '1px solid rgba(255,255,255,.12)', backdropFilter: 'blur(20px)' }}>
+            {LINKS.map(([l, h], i) => (
+              <motion.div key={l} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.04 * i }}>
+                <Link href={h} onClick={() => setOpen(false)} className="flex items-center justify-between px-4 py-3.5 rounded-xl text-base font-semibold text-white hover:bg-white/10">
+                  {l}<ArrowRight className="w-4 h-4 text-slate-300" />
                 </Link>
-              ))}
-              <div className="pt-3 border-t border-[var(--border)][0.06] flex flex-col gap-2">
-                <Link href="/login" onClick={() => setMobileOpen(false)}
-                  className="px-4 py-3 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]
-                    hover:bg-white/5 rounded-xl transition text-center">
-                  Sign in
-                </Link>
-                {/* 🔧 Changed href to /signup */}
-                <Link href="/signup" onClick={() => setMobileOpen(false)}
-                  className="px-4 py-3 text-sm font-semibold text-[var(--text-primary)] text-center
-                    bg-indigo-600 hover:bg-indigo-500 rounded-xl transition">
-                  Get started free
-                </Link>
-              </div>
+              </motion.div>
+            ))}
+            <div className="grid grid-cols-2 gap-2 p-1 pt-3">
+              <Link href="/login" onClick={() => setOpen(false)} className="h-12 rounded-xl flex items-center justify-center font-bold text-white border border-white/20">Sign in</Link>
+              <Link href="/signup" onClick={() => setOpen(false)} className="h-12 rounded-xl flex items-center justify-center font-bold text-white bg-gradient-to-r from-indigo-500 to-violet-500">Start free</Link>
             </div>
           </motion.div>
         )}

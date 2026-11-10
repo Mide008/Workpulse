@@ -28,7 +28,7 @@ const ACTIONS = [
   { id: 'notify_assignee', label: 'Notify assignee', description: 'Send notification to the task/goal owner' },
   { id: 'create_followup_task', label: 'Create follow-up task', description: 'Automatically create a related task' },
   { id: 'send_slack', label: 'Post to Slack', description: 'Send message to configured Slack channel' },
-  { id: 'generate_ai_report', label: 'Generate AI report', description: 'Create an AI-written summary notification' },
+  { id: 'generate_ai_report', label: 'Generate report', description: 'Create an AI-written summary notification' },
 ]
 
 const STATUS_ICON: Record<string, any> = {
@@ -133,7 +133,7 @@ export default function AgentsClient({ rules: initial, runs, user }: {
       <motion.div variants={staggerItem} className="flex items-start justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
-            AI Agent Builder
+            Agent Builder
           </h1>
           <p className="text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>
             Configure automated agents that act on your workspace data

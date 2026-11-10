@@ -32,3 +32,6 @@ export function createAdminClient() {
     { cookies: { getAll: () => [], setAll: () => {} } }
   )
 }
+
+// Backward-compat alias for the zip's standup/approvals pages
+export const createClient = createServerSupabaseClient

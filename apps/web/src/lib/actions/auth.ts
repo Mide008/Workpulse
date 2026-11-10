@@ -1,6 +1,7 @@
 // apps/web/src/lib/actions/auth.ts
 'use server'
 
+import { effectivePlan } from '@/lib/plans'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
@@ -16,7 +17,7 @@ export async function getCurrentUser() {
       .select(`
         id, full_name, email, avatar_url, job_title, workspace_id,
         role:roles(name, level),
-        workspace:workspaces(name, logo_url, primary_color, plan)
+        workspace:workspaces(name, logo_url, primary_color, plan, plan_expires_at)
       `)
       .eq('id', user.id)
       .maybeSingle()
@@ -34,6 +35,7 @@ export async function getCurrentUser() {
       logo_url: string | null
       primary_color: string
       plan: string
+      plan_expires_at?: string | null
     } | null
 
     return {
@@ -48,7 +50,7 @@ export async function getCurrentUser() {
       workspaceName: workspace?.name ?? '',
       workspaceLogo: workspace?.logo_url ?? null,
       primaryColor: workspace?.primary_color ?? '#6366F1',
-      plan: workspace?.plan ?? 'free',
+      plan: effectivePlan(workspace?.plan, workspace?.plan_expires_at),
     }
   } catch (err) {
     console.error('[getCurrentUser] unexpected error:', err)

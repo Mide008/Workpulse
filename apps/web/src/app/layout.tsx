@@ -71,7 +71,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </div>
           }
         >
-          <Providers>{children}</Providers>
+          <a href="#main-content" className="skip-link">Skip to main content</a>
+      <Providers>{children}</Providers>
         </Suspense>
 
         {/* Service Worker Registration */}

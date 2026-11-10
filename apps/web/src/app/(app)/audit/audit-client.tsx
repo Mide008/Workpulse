@@ -2,8 +2,9 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { Download, Search, Filter, Shield } from 'lucide-react'
+import { Download, Search, Shield, RefreshCw } from 'lucide-react'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { getInitials } from '@/lib/utils'
 import { staggerContainer, staggerItem } from '@/lib/motion'
@@ -17,12 +18,16 @@ const ACTION_LABELS: Record<string, string> = {
   blocker_added: 'Flagged blocker', blocker_resolved: 'Resolved blocker',
   project_created: 'Created project', project_updated: 'Updated project', project_completed: 'Completed project',
   goal_created: 'Created goal', goal_updated: 'Updated goal', goal_checkin: 'Checked in on goal', goal_completed: 'Achieved goal',
-  member_invited: 'Invited member', member_joined: 'Member joined',
+  member_invited: 'Invited member', member_joined: 'Member joined', channel_created: 'Created channel',
   deal_created: 'Created deal', deal_stage_changed: 'Moved deal', deal_won: 'Won deal', deal_lost: 'Lost deal',
   contact_created: 'Created contact',
+  approval_requested: 'Requested approval', approval_approved: 'Approved request', approval_rejected: 'Rejected request',
+  worklog_submitted: 'Submitted work log', leave_requested: 'Requested leave', leave_approved: 'Approved leave', leave_rejected: 'Rejected leave',
+  appraisal_generated: 'Generated appraisal',
 }
 
 export default function AuditClient({ logs, workspaceId }: { logs: any[]; workspaceId: string }) {
+  const router = useRouter()
   const [search, setSearch] = useState('')
   const [entityFilter, setEntityFilter] = useState('all')
   const [exporting, setExporting] = useState(false)
@@ -77,12 +82,19 @@ export default function AuditClient({ logs, workspaceId }: { logs: any[]; worksp
             Complete record of all workspace activity. {logs.length} events logged.
           </p>
         </div>
-        <button onClick={exportCSV} disabled={exporting}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border transition hover:opacity-80 disabled:opacity-50"
-          style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}>
-          <Download className="w-4 h-4" />
-          {exporting ? 'Exporting...' : 'Export CSV'}
-        </button>
+        <div className="flex gap-2">
+          <button onClick={() => router.refresh()}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border transition hover:opacity-80"
+            style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}>
+            <RefreshCw className="w-4 h-4" /> Refresh
+          </button>
+          <button onClick={exportCSV} disabled={exporting}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold border transition hover:opacity-80 disabled:opacity-50"
+            style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}>
+            <Download className="w-4 h-4" />
+            {exporting ? 'Exporting...' : 'Export CSV'}
+          </button>
+        </div>
       </motion.div>
 
       <motion.div variants={staggerItem} className="flex items-center gap-3 flex-wrap">
@@ -93,10 +105,10 @@ export default function AuditClient({ logs, workspaceId }: { logs: any[]; worksp
             className="w-full h-10 pl-9 pr-4 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
             style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', color: 'var(--text-primary)' }} />
         </div>
-        <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'var(--bg-elevated)' }}>
+        <div className="flex gap-1 p-1 rounded-xl overflow-x-auto max-w-full" style={{ background: 'var(--bg-elevated)' }}>
           {['all', ...entities].map(e => (
             <button key={e} onClick={() => setEntityFilter(e)}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-all"
+              className="px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-all whitespace-nowrap"
               style={entityFilter === e
                 ? { background: 'var(--primary)', color: 'white' }
                 : { color: 'var(--text-secondary)' }
@@ -110,7 +122,7 @@ export default function AuditClient({ logs, workspaceId }: { logs: any[]; worksp
       <motion.div variants={staggerItem}
         className="rounded-2xl border overflow-hidden" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
         <div className="divide-y" style={{ '--tw-divide-opacity': 1 } as any}>
-          {filtered.slice(0, 100).map((log, i) => (
+          {filtered.slice(0, 100).map((log) => (
             <div key={log.id} className="flex items-start gap-4 px-5 py-3.5 hover:bg-[var(--bg-elevated)] transition-colors">
               <Avatar size="sm" className="shrink-0 mt-0.5">
                 {(log.user as any)?.avatar_url
