@@ -1,93 +1,60 @@
+// apps/web/src/components/ui/tooltip.tsx
 'use client'
-
-import * as React from 'react'
 import * as TooltipPrimitive from '@radix-ui/react-tooltip'
+import { type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
-// ----- Low‑level primitives (same as before) -----
-function TooltipProvider({
-  children,
-  delayDuration = 300,
-}: {
-  children: React.ReactNode
-  delayDuration?: number
-}) {
-  return (
-    <TooltipPrimitive.Provider delayDuration={delayDuration}>
-      {children}
-    </TooltipPrimitive.Provider>
-  )
-}
+export const TooltipProvider = TooltipPrimitive.Provider
+export const Tooltip = TooltipPrimitive.Root
+export const TooltipTrigger = TooltipPrimitive.Trigger
 
-// Root – used by files that already have <Tooltip><TooltipTrigger>…</TooltipContent></Tooltip>
-function Tooltip({ children, ...props }: TooltipPrimitive.TooltipProps) {
-  return <TooltipPrimitive.Root {...props}>{children}</TooltipPrimitive.Root>
-}
-
-function TooltipTrigger({
-  children,
-  asChild,
+export function TooltipContent({
+  children, side = 'top', className, ...props
 }: {
-  children: React.ReactNode
-  asChild?: boolean
-}) {
-  return (
-    <TooltipPrimitive.Trigger asChild={asChild}>
-      {children}
-    </TooltipPrimitive.Trigger>
-  )
-}
-
-function TooltipContent({
-  children,
-  className,
-  side = 'top',
-}: {
-  children: React.ReactNode
+  children: ReactNode
+  side?: 'bottom' | 'left' | 'right' | 'top'
   className?: string
-  side?: 'top' | 'bottom' | 'left' | 'right'
-}) {
+} & Omit<React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>, 'side' | 'children' | 'className'>) {
   return (
     <TooltipPrimitive.Portal>
       <TooltipPrimitive.Content
         side={side}
         sideOffset={6}
         className={cn(
-          'z-50 px-3 py-1.5 text-xs font-medium text-[var(--text-primary)]',
-          'bg-[var(--bg-elevated)] border border-[var(--border)]10 rounded-lg shadow-xl',
-          'animate-in fade-in-0 zoom-in-95',
-          'data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95',
+          'z-[100] rounded-lg border px-3 py-1.5 text-xs font-medium shadow-lg',
+          'animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95',
           className
         )}
+        style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border-strong)', color: 'var(--text-primary)' }}
+        {...props}
       >
         {children}
-        <TooltipPrimitive.Arrow className="fill-slate-800" />
+        <TooltipPrimitive.Arrow style={{ fill: 'var(--bg-elevated)' }} />
       </TooltipPrimitive.Content>
     </TooltipPrimitive.Portal>
   )
 }
 
-// ----- New convenience wrapper (used in header / sidebar) -----
-function SimpleTooltip({
+export function SimpleTooltip({
   children,
   content,
   side = 'top',
-  delayDuration = 400,
+  delayDuration = 200,
+  disabled = false,
 }: {
-  children: React.ReactNode
-  content: React.ReactNode
-  side?: 'top' | 'bottom' | 'left' | 'right'
+  children: ReactNode
+  content: ReactNode
+  side?: 'bottom' | 'left' | 'right' | 'top'
   delayDuration?: number
+  disabled?: boolean
 }) {
-  if (!content) return <>{children}</>
+  // If disabled, render children with no tooltip wrapper (used when sidebar is expanded)
+  if (disabled) return <>{children}</>
+
   return (
-    <TooltipProvider delayDuration={delayDuration}>
-      <Tooltip>
-        <TooltipTrigger asChild>{children}</TooltipTrigger>
-        <TooltipContent side={side}>{content}</TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <Tooltip delayDuration={delayDuration}>
+      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipContent side={side}>{content}</TooltipContent>
+    </Tooltip>
   )
 }
-
-export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider, SimpleTooltip }
