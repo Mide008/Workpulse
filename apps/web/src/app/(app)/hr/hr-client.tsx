@@ -3,13 +3,16 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Users, Calendar, ClipboardList, Check, X, Plus, Loader2, Star, Clock } from 'lucide-react'
+import {
+  Users, Calendar, ClipboardList, Check, X,
+  Plus, Loader2, Star, Clock, FileText,
+} from 'lucide-react'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { getInitials, cn } from '@/lib/utils'
 import { staggerContainer, staggerItem } from '@/lib/motion'
+import { EmptyState } from '@/components/ui/empty-state'
 import { toast } from 'sonner'
 import { formatDistanceToNow } from 'date-fns'
-import TiltCard from '@/components/motion/tilt-card'
 
 const LEAVE_TYPES = ['Annual Leave', 'Sick Leave', 'Maternity/Paternity', 'Study Leave', 'Compassionate', 'Unpaid Leave']
 const STATUS_STYLE: Record<string, string> = {
@@ -106,12 +109,7 @@ export default function HRClient({ leaveRequests: initial, appraisals: initialAp
   const inputStyle = { background: 'var(--bg-elevated)', borderColor: 'var(--border)', color: 'var(--text-primary)' }
 
   const isManager = user.roleLevel <= 2
-  
-  // Fix: Ensure strict filtering for "My Requests"
-  const filteredLeaves = leaveTab === 'mine' 
-    ? leaveRequests.filter(l => l.user_id === user.id) 
-    : leaveRequests
-
+  const filteredLeaves = leaveTab === 'mine' ? leaveRequests.filter(l => l.user_id === user.id) : leaveRequests
   const pendingLeave = filteredLeaves.filter(l => l.status === 'pending')
 
   return (
@@ -126,16 +124,13 @@ export default function HRClient({ leaveRequests: initial, appraisals: initialAp
         </button>
       </motion.div>
 
-      {/* 2026 Upgrade: TiltCards for Stats */}
       <motion.div variants={staggerItem} className="grid grid-cols-3 gap-4">
         {[ { label: 'Pending leave', value: pendingLeave.length, color: '#F59E0B', icon: Clock }, { label: 'Team members', value: members.length, color: '#6366F1', icon: Users }, { label: 'Appraisals', value: appraisals.length, color: '#10B981', icon: ClipboardList } ].map(s => (
-          <TiltCard key={s.label} intensity={8}>
-            <div className="rounded-3xl border p-5 bg-[var(--bg-surface)]" style={{ borderColor: 'var(--border)' }}>
-              <div className="p-2.5 rounded-xl w-fit mb-3" style={{ background: `${s.color}15` }}><s.icon className="w-5 h-5" style={{ color: s.color }} /></div>
-              <p className="text-3xl font-black" style={{ color: s.color }}>{s.value}</p>
-              <p className="text-xs font-medium mt-1 text-[var(--text-muted)]">{s.label}</p>
-            </div>
-          </TiltCard>
+          <div key={s.label} className="rounded-3xl border p-5 bg-[var(--bg-surface)]" style={{ borderColor: 'var(--border)' }}>
+            <div className="p-2.5 rounded-xl w-fit mb-3" style={{ background: `${s.color}15` }}><s.icon className="w-5 h-5" style={{ color: s.color }} /></div>
+            <p className="text-3xl font-black" style={{ color: s.color }}>{s.value}</p>
+            <p className="text-xs font-medium mt-1 text-[var(--text-muted)]">{s.label}</p>
+          </div>
         ))}
       </motion.div>
 

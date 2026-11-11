@@ -1,31 +1,13 @@
 // apps/web/src/app/(app)/standup/page.tsx
-import { createClient } from '@/lib/supabase/server'
-import StandupClient from './standup-client'
+export const dynamic = 'force-dynamic'
+import { getCurrentUser } from '@/lib/actions/auth'
 import { redirect } from 'next/navigation'
+import StandupClient from './standup-client'
 
 export const metadata = { title: 'Work Log' }
 
 export default async function StandupPage() {
-  const sb = await createClient()
-  const { data: { user } } = await sb.auth.getUser()
+  const user = await getCurrentUser()
   if (!user) redirect('/login')
-
-  const { data: profile } = await sb
-    .from('users')
-    .select('*, role:roles(level)')
-    .eq('id', user.id)
-    .single()
-
-  return (
-    <StandupClient
-      user={{
-        id: user.id,
-        fullName: profile?.full_name ?? 'User',
-        roleLevel: (profile as any)?.role?.level ?? 4,
-        role: (profile as any)?.role?.name ?? 'Staff',
-        jobTitle: profile?.job_title ?? '',
-        workspaceId: profile?.workspace_id ?? '',
-      }}
-    />
-  )
+  return <StandupClient user={{ id: user.id, fullName: user.fullName, roleLevel: user.roleLevel }} />
 }

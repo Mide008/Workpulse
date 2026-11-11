@@ -46,7 +46,7 @@ const priorityConfig: Record<string, { label: string; dot: string; badge: 'defau
 }
 
 const statusConfig: Record<string, { label: string; color: string; icon: any; badge: 'default' | 'info' | 'danger' | 'purple' | 'success' }> = {
-  not_started: { label: 'Not Started', color: 'text-[var(--text-secondary)]', icon: Circle,        badge: 'default' },
+  not_started: { label: 'Not Started', color: 'text-[var(--text-secondary)]',   icon: Circle,        badge: 'default' },
   in_progress:  { label: 'In Progress', color: 'text-blue-400',   icon: Clock,         badge: 'info'    },
   blocked:      { label: 'Blocked',     color: 'text-red-400',    icon: AlertTriangle, badge: 'danger'  },
   review:       { label: 'In Review',   color: 'text-purple-400', icon: Clock,         badge: 'purple'  },
