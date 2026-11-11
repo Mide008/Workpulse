@@ -10,7 +10,6 @@ export default async function HRPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  // 1. Fetch current user profile + role
   const { data: profile } = await supabase
     .from('users')
     .select('workspace_id, full_name, role:roles(level)')
@@ -19,21 +18,19 @@ export default async function HRPage() {
 
   if (!profile || !profile.workspace_id) redirect('/onboarding/workspace')
 
-  // 2. Fetch all leave requests for the workspace
-  const { data: leaveRequests } = await supabase
+  // Cast to `any` because leave_requests / appraisals are not yet in database.types.ts
+  const { data: leaveRequests } = await (supabase as any)
     .from('leave_requests')
-    .select('*, user:users!leave_requests_user_id_fkey(id, full_name, avatar_url)')
+    .select('*, user:users(id, full_name, avatar_url)')
     .eq('workspace_id', profile.workspace_id)
     .order('created_at', { ascending: false })
 
-  // 3. Fetch all appraisals
-  const { data: appraisals } = await supabase
+  const { data: appraisals } = await (supabase as any)
     .from('appraisals')
-    .select('*, user:users!appraisals_user_id_fkey(id, full_name, avatar_url)')
+    .select('*, user:users(id, full_name, avatar_url)')
     .eq('workspace_id', profile.workspace_id)
     .order('created_at', { ascending: false })
 
-  // 4. Fetch team members (to populate the appraisal dropdown)
   const { data: members } = await supabase
     .from('users')
     .select('id, full_name, avatar_url')
@@ -42,7 +39,7 @@ export default async function HRPage() {
   const userData = {
     id: user.id,
     fullName: profile.full_name || 'User',
-    roleLevel: (profile.role as any)?.level ?? 4, // 1=Exec, 2=Manager, 3=Lead, 4=Staff
+    roleLevel: (profile.role as any)?.level ?? 4,
   }
 
   return (
