@@ -121,13 +121,13 @@ export default function HeroSection() {
         </motion.p>
 
         <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.85, duration: 0.6 }}
-          className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-5">
+          className="flex flex-row items-center justify-center gap-2 sm:gap-3 mb-5">
           <MagneticButton>
-            <Link href="/signup" className="btn-shine inline-flex items-center gap-2 px-8 h-14 rounded-2xl text-base font-bold text-white bg-gradient-to-r from-indigo-500 to-violet-500 shadow-[0_14px_40px_rgba(99,102,241,.5)]">
-              Start free <ArrowRight className="w-5 h-5" />
+            <Link href="/signup" className="btn-shine inline-flex items-center justify-center gap-1.5 px-4 sm:px-8 h-12 sm:h-14 rounded-xl sm:rounded-2xl text-sm sm:text-base font-bold text-white bg-gradient-to-r from-indigo-500 to-violet-500 shadow-[0_14px_40px_rgba(99,102,241,.5)] whitespace-nowrap">
+              Start free <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5" />
             </Link>
           </MagneticButton>
-          <Link href="/#features" className="inline-flex items-center gap-2 px-8 h-14 rounded-2xl text-base font-bold text-white hover:bg-white/10 border border-white/20 transition-colors">
+          <Link href="/#features" className="inline-flex items-center justify-center gap-1.5 px-4 sm:px-8 h-12 sm:h-14 rounded-xl sm:rounded-2xl text-sm sm:text-base font-bold text-white hover:bg-white/10 border border-white/20 transition-colors whitespace-nowrap">
             See how it works
           </Link>
         </motion.div>
