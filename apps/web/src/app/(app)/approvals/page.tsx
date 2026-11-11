@@ -1,29 +1,13 @@
 // apps/web/src/app/(app)/approvals/page.tsx
-import { createClient } from '@/lib/supabase/server'
-import ApprovalsClient from './approvals-client'
+export const dynamic = 'force-dynamic'
+import { getCurrentUser } from '@/lib/actions/auth'
 import { redirect } from 'next/navigation'
+import ApprovalsClient from './approvals-client'
 
 export const metadata = { title: 'Approvals' }
 
 export default async function ApprovalsPage() {
-  const sb = await createClient()
-  const { data: { user } } = await sb.auth.getUser()
+  const user = await getCurrentUser()
   if (!user) redirect('/login')
-
-  const { data: profile } = await sb
-    .from('users')
-    .select('*, role:roles(level)')
-    .eq('id', user.id)
-    .single()
-
-  return (
-    <ApprovalsClient
-      user={{
-        id: user.id,
-        fullName: profile?.full_name ?? 'User',
-        roleLevel: (profile as any)?.role?.level ?? 4,
-        workspaceId: profile?.workspace_id ?? '',
-      }}
-    />
-  )
+  return <ApprovalsClient user={{ id: user.id, fullName: user.fullName, roleLevel: user.roleLevel }} />
 }
