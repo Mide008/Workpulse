@@ -34,12 +34,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   // Notify the requester
   if (data?.requester_id && data.requester_id !== user.id) {
     try {
-      await sb.from('notifications').insert({
+      // FIX: Cast to any to avoid strict insert type mismatch
+      await (sb as any).from('notifications').insert({
         workspace_id: data.workspace_id,
         user_id: data.requester_id,
         type: body.status === 'approved' ? 'success' : 'warning',
         title: `Your request "${data.title}" was ${body.status}`,
-        body: body.note || null,
+        message: body.note || null, // Changed to 'message' to match notifications schema
         entity_id: data.id,
         read: false,
       })
