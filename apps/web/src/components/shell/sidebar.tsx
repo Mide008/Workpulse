@@ -71,7 +71,6 @@ export default function Sidebar({ user, open, onClose }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(pathname.startsWith('/settings'))
 
-  // Load persisted state; if none, auto-collapse on narrow desktop (1024–1280)
   useEffect(() => {
     const saved = localStorage.getItem('sidebar-collapsed')
     if (saved !== null) {
@@ -86,7 +85,6 @@ export default function Sidebar({ user, open, onClose }: SidebarProps) {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  // Auto-expand settings submenu when a settings route is active
   useEffect(() => {
     if (pathname.startsWith('/settings')) setSettingsOpen(true)
   }, [pathname])
@@ -202,10 +200,12 @@ export default function Sidebar({ user, open, onClose }: SidebarProps) {
             <WorkPulseLogo />
           ) : (
             <div
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm"
-              style={{ background: 'var(--primary)' }}
+              className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-lg"
+              style={{ background: 'linear-gradient(135deg,#6366F1,#8B5CF6)' }}
             >
-              W
+              <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4" aria-hidden="true">
+                <path d="M3 12h4l3-9 4 18 3-9h4" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             </div>
           )}
           <button

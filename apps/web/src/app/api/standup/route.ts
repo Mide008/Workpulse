@@ -1,3 +1,4 @@
+// apps/web/src/app/api/standup/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { logActivity } from '@/lib/activity'
@@ -11,12 +12,12 @@ export async function GET(req: NextRequest) {
   const date = new URL(req.url).searchParams.get('date') ?? new Date().toISOString().split('T')[0]
 
   const { data } = await (sb as any).from('standup_logs')
-    .select('*, user:users(id,full_name,avatar_url)') // <-- Removed 'role'
+    .select('*, user:users(id,full_name,avatar_url,job_title)')
     .eq('workspace_id', p?.workspace_id ?? '')
     .eq('log_date', date)
     .order('created_at', { ascending: false })
 
-  return NextResponse.json(data ?? [])
+  return NextResponse.json({ logs: data ?? [] }) // FIX: { logs: [...] }
 }
 
 export async function POST(req: NextRequest) {
@@ -45,5 +46,5 @@ export async function POST(req: NextRequest) {
     metadata: { actorName: p.full_name },
   })
 
-  return NextResponse.json(data, { status: 201 })
+  return NextResponse.json({ log: data }, { status: 201 }) // FIX: { log: data }
 }

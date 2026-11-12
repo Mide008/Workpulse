@@ -1,10 +1,9 @@
+// apps/web/src/app/(app)/notifications/notifications-client.tsx
 'use client'
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Bell, Check, CheckCheck, Trash2, Info, AlertTriangle, CheckCircle2, Zap } from 'lucide-react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { formatDistanceToNow } from 'date-fns'
@@ -34,7 +33,6 @@ export default function NotificationsClient({
   notifications: any[]
   userId: string
 }) {
-  const router = useRouter()
   const [notifications, setNotifications] = useState(initial)
 
   const unread = notifications.filter(n => !n.read).length
@@ -60,6 +58,8 @@ export default function NotificationsClient({
 
   async function deleteNotification(id: string) {
     setNotifications(prev => prev.filter(n => n.id !== id))
+    await fetch(`/api/notifications?id=${id}`, { method: 'DELETE' })
+    toast.success('Notification deleted')
   }
 
   return (

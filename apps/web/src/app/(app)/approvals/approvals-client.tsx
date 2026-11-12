@@ -51,17 +51,17 @@ export default function ApprovalsClient({ user }: { user: { id: string; fullName
   }, [])
   useEffect(() => { load() }, [load])
 
-  const visible = useMemo(() => items.filter(a => tab === 'mine' ? a.requester_id === user.id : tab === 'review' ? a.status === 'pending' && a.requester_id !== user.id : true), [items, tab, user.id])
+  const visible = useMemo(() => items.filter(a => tab === 'mine' ? a.requester_id === user.id : tab === 'review' ? a.status === 'pending' : true), [items, tab, user.id])
   const counts = useMemo(() => ({
     pending: items.filter(a => a.status === 'pending').length,
     approved: items.filter(a => a.status === 'approved').length,
     rejected: items.filter(a => a.status === 'rejected').length,
-    review: items.filter(a => a.status === 'pending' && a.requester_id !== user.id).length,
+    review: items.filter(a => a.status === 'pending').length,
   }), [items, user.id])
 
   async function decide(id: string, status: 'approved' | 'rejected', note?: string) {
     const prev = items
-    setItems(items.map(a => (a.id === id ? { ...a, status, reviewer: { full_name: user.fullName } } : a)))
+    setItems(items.map(a => (a.id === id ? { ...a, status, reviewer: { full_name: user.fullName }, reviewed_at: new Date().toISOString() } : a)))
     const res = await fetch(`/api/approvals/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status, note }) })
     const json = await res.json().catch(() => ({}))
     if (!res.ok) { setItems(prev); toast.error(json?.error ?? 'Could not save your decision'); return }
@@ -205,7 +205,12 @@ function ApprovalCard({ a, me, isManager, fresh, onDecide, onCancel }: any) {
           <button onClick={() => onCancel(a.id)} className="mt-3 text-sm font-semibold inline-flex items-center gap-1.5 min-h-[40px]" style={{ color: 'var(--text-secondary)' }}><Trash2 className="w-4 h-4" />Cancel request</button>
         )}
         {a.status !== 'pending' && a.reviewer?.full_name && (
-          <p className="text-sm mt-3" style={{ color: 'var(--text-secondary)' }}>{a.status === 'approved' ? 'Approved' : 'Declined'} by {a.reviewer.full_name}{a.review_note ? ` · “${a.review_note}”` : ''}</p>
+          <p className="text-sm mt-3 flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
+            {a.status === 'approved' ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <XCircle className="w-4 h-4 text-red-500" />}
+            {a.status === 'approved' ? 'Approved' : 'Declined'} by <strong className="text-[var(--text-primary)]">{a.reviewer.full_name}</strong>
+            {a.reviewed_at ? <span className="text-xs text-[var(--text-muted)] italic">· {formatDistanceToNow(new Date(a.reviewed_at), { addSuffix: true })}</span> : null}
+            {a.review_note ? ` · “${a.review_note}”` : ''}
+          </p>
         )}
       </div>
     </motion.li>

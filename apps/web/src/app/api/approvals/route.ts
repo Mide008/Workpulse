@@ -1,23 +1,20 @@
+// apps/web/src/app/api/approvals/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { logActivity } from '@/lib/activity'
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   const sb = await createClient()
   const { data: { user } } = await sb.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { data: p } = await sb.from('users').select('workspace_id').eq('id', user.id).single()
-  const mine = new URL(req.url).searchParams.get('mine') === '1'
 
-  let q = (sb as any).from('approvals')
-    .select('*, requester:users!approvals_requester_id_fkey(id,full_name,avatar_url), reviewer:users!approvals_reviewer_id_fkey(id,full_name)') // <-- Removed 'role'
+  const { data } = await (sb as any).from('approvals')
+    .select('*, requester:users!approvals_requester_id_fkey(id,full_name,avatar_url), reviewer:users!approvals_reviewer_id_fkey(id,full_name)')
     .eq('workspace_id', p?.workspace_id ?? '').order('created_at', { ascending: false })
 
-  if (mine) q = q.eq('requester_id', user.id)
-
-  const { data } = await q
-  return NextResponse.json(data ?? [])
+  return NextResponse.json({ approvals: data ?? [] })
 }
 
 export async function POST(req: NextRequest) {
@@ -31,8 +28,8 @@ export async function POST(req: NextRequest) {
   const body = await req.json()
   const { data, error } = await (sb as any).from('approvals').insert({
     workspace_id: p.workspace_id, requester_id: user.id, type: body.type, title: body.title,
-    description: body.description || null, amount: body.amount || null,
-    start_date: body.start_date || null, end_date: body.end_date || null, status: 'pending',
+    description: body.description || null, amount: body.amount || null, currency: body.currency || 'USD',
+    start_date: body.startDate || null, end_date: body.endDate || null, status: 'pending',
   }).select().single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -47,5 +44,5 @@ export async function POST(req: NextRequest) {
     notifyUserIds: targets.map((m: any) => m.id),
   })
 
-  return NextResponse.json(data, { status: 201 })
+  return NextResponse.json({ approval: data }, { status: 201 })
 }

@@ -18,16 +18,17 @@ export default async function HRPage() {
 
   if (!profile || !profile.workspace_id) redirect('/onboarding/workspace')
 
-  // Cast to `any` because leave_requests / appraisals are not yet in database.types.ts
-  const { data: leaveRequests } = await (supabase as any)
-    .from('leave_requests')
-    .select('*, user:users(id, full_name, avatar_url)')
+  // Fetch ALL approvals (Leave, Expense, Purchase, etc.)
+  const { data: approvals } = await (supabase as any)
+    .from('approvals')
+    .select('*, requester:users!approvals_requester_id_fkey(id, full_name, avatar_url), reviewer:users!approvals_reviewer_id_fkey(id, full_name)')
     .eq('workspace_id', profile.workspace_id)
     .order('created_at', { ascending: false })
 
+  // Fetch Appraisals
   const { data: appraisals } = await (supabase as any)
     .from('appraisals')
-    .select('*, user:users(id, full_name, avatar_url)')
+    .select('*, user:users!appraisals_user_id_fkey(id, full_name, avatar_url)')
     .eq('workspace_id', profile.workspace_id)
     .order('created_at', { ascending: false })
 
@@ -36,18 +37,12 @@ export default async function HRPage() {
     .select('id, full_name, avatar_url')
     .eq('workspace_id', profile.workspace_id)
 
-  const userData = {
-    id: user.id,
-    fullName: profile.full_name || 'User',
-    roleLevel: (profile.role as any)?.level ?? 4,
-  }
-
   return (
     <HRClient
-      leaveRequests={leaveRequests ?? []}
+      approvals={approvals ?? []}
       appraisals={appraisals ?? []}
       members={members ?? []}
-      user={userData}
+      user={{ id: user.id, fullName: profile.full_name || 'User', roleLevel: (profile.role as any)?.level ?? 4 }}
     />
   )
 }

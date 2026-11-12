@@ -31,12 +31,18 @@ export default function Header({ user, onMenuClick }: HeaderProps) {
   const [unreadCount, setUnreadCount] = useState(0)
 
   useEffect(() => {
-    fetch('/api/notifications')
-      .then(r => r.json())
-      .then(({ notifications }) => {
-        setUnreadCount((notifications ?? []).filter((n: any) => !n.read).length)
-      })
-      .catch(() => {})
+    async function checkNotifications() {
+      try {
+        const res = await fetch('/api/notifications')
+        if (res.ok) {
+          const { notifications } = await res.json()
+          setUnreadCount(notifications.filter((n: any) => !n.read).length)
+        }
+      } catch (err) {}
+    }
+    checkNotifications()
+    const interval = setInterval(checkNotifications, 30000)
+    return () => clearInterval(interval)
   }, [])
 
   const pageTitle = (() => {
