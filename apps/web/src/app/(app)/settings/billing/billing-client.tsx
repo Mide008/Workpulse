@@ -2,11 +2,11 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Check, Zap, Building2, Users, FolderKanban, CheckSquare, Crown, ArrowRight, Mail } from 'lucide-react'
+import { Check, Users, FolderKanban, CheckSquare, Crown, ArrowRight, Mail, Receipt, AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { PLAN_PRICING, PLAN_LIMITS } from '@/lib/plans'
 import { staggerContainer, staggerItem } from '@/lib/motion'
-import { toast } from 'sonner'
+import { format } from 'date-fns'
 
 interface Props {
   workspace: {
@@ -18,6 +18,10 @@ interface Props {
     billing_email: string | null
   }
   usage: { members: number; tasks: number; projects: number }
+  payments: any[]
+  payEnabled: boolean
+  chargeCurrency: string
+  usdRate: number
 }
 
 const PLAN_FEATURES: Record<string, string[]> = {
@@ -37,6 +41,8 @@ const PLAN_FEATURES: Record<string, string[]> = {
     'Advanced analytics and reporting',
     'PDF report export and sharing',
     'CRM (contacts, deals, pipeline)',
+    'HR module (leave, appraisals)',
+    'Approvals workflow',
     'Task templates and recurring tasks',
     'Custom brand colour',
     'Priority support',
@@ -54,21 +60,19 @@ const PLAN_FEATURES: Record<string, string[]> = {
   ],
 }
 
-export default function BillingClient({ workspace, usage }: Props) {
+export default function BillingClient({ workspace, usage, payments }: Props) {
   const currentPlan = (workspace.plan ?? 'free') as 'free' | 'pro' | 'enterprise'
   const limits = PLAN_LIMITS[currentPlan]
+  const expiresAt = workspace.plan_expires_at ? new Date(workspace.plan_expires_at) : null
+  const isExpired = expiresAt ? expiresAt.getTime() < Date.now() : false
 
   function contactSales() {
     window.location.href = 'mailto:hello@workpulse.io?subject=WorkPulse Enterprise Enquiry'
   }
 
-  function startUpgrade(plan: string) {
-    toast.info('Payment integration coming soon. Contact us at hello@workpulse.io to upgrade manually.')
-  }
-
   const usageItems = [
-    { label: 'Team members', used: usage.members, limit: typeof limits.seats === 'number' ? limits.seats : null, icon: Users },
-    { label: 'Active projects', used: usage.projects, limit: typeof limits.projects === 'number' ? limits.projects : null, icon: FolderKanban },
+    { label: 'Team members', used: usage.members, limit: typeof limits.seats === 'number' && limits.seats < 9999 ? limits.seats : null, icon: Users },
+    { label: 'Active projects', used: usage.projects, limit: typeof limits.projects === 'number' && limits.projects < 9999 ? limits.projects : null, icon: FolderKanban },
     { label: 'Tasks created', used: usage.tasks, limit: null, icon: CheckSquare },
   ]
 
@@ -77,14 +81,24 @@ export default function BillingClient({ workspace, usage }: Props) {
       variants={staggerContainer}
       initial="initial"
       animate="animate"
-      className="max-w-4xl mx-auto space-y-6"
+      className="max-w-4xl mx-auto space-y-6 pb-20"
     >
       <motion.div variants={staggerItem}>
         <h1 className="text-2xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>Billing & Plan</h1>
         <p className="text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>Manage your subscription and view usage</p>
       </motion.div>
 
-      {/* Current plan */}
+      {isExpired && (
+        <motion.div variants={staggerItem} role="alert" className="rounded-2xl p-4 flex gap-3" style={{ background: 'rgba(239,68,68,.1)', border: '1px solid rgba(239,68,68,.35)' }}>
+          <AlertTriangle className="w-5 h-5 shrink-0 text-red-400 mt-0.5" />
+          <div>
+            <p className="font-semibold" style={{ color: 'var(--text-primary)' }}>Your Pro plan expired</p>
+            <p className="text-sm mt-0.5" style={{ color: 'var(--text-secondary)' }}>The workspace is back on Starter limits. Contact us to renew.</p>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Current plan card */}
       <motion.div variants={staggerItem}
         className="rounded-2xl border p-6"
         style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
@@ -99,24 +113,24 @@ export default function BillingClient({ workspace, usage }: Props) {
             </h2>
             {currentPlan === 'free' && (
               <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-                Free forever with core features. Upgrade to unlock analytics, CRM, and unlimited team members.
+                Free forever with core features. Upgrade to unlock analytics, CRM, HR, and unlimited team members.
               </p>
             )}
-            {currentPlan === 'pro' && workspace.plan_expires_at && (
+            {currentPlan === 'pro' && expiresAt && !isExpired && (
               <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-                Renews {new Date(workspace.plan_expires_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                Renews {format(expiresAt, 'd MMMM yyyy')}
               </p>
             )}
           </div>
           <div className="text-right">
             <p className="text-3xl font-black" style={{ color: 'var(--text-primary)' }}>
-              {currentPlan === 'free' ? '$0' : currentPlan === 'pro' ? '$12' : 'Custom'}
+              {currentPlan === 'free' ? '$0' : currentPlan === 'pro' ? `$${PLAN_PRICING.pro.monthly}` : 'Custom'}
               {currentPlan !== 'enterprise' && <span className="text-base font-normal ml-1" style={{ color: 'var(--text-muted)' }}>/user/mo</span>}
             </p>
           </div>
         </div>
 
-        {/* Usage */}
+        {/* Usage meters */}
         <div className="grid sm:grid-cols-3 gap-4 mt-6 pt-6 border-t" style={{ borderColor: 'var(--border)' }}>
           {usageItems.map(item => {
             const pct = item.limit ? (item.used / item.limit) * 100 : null
@@ -216,19 +230,48 @@ export default function BillingClient({ workspace, usage }: Props) {
                     Contact sales
                   </button>
                 ) : (
-                  <button
-                    onClick={() => startUpgrade(plan)}
+                  <a
+                    href={`mailto:hello@workpulse.io?subject=Upgrade to Pro&body=Please upgrade ${workspace.name} to the Pro plan.`}
                     className="w-full py-2.5 rounded-xl text-sm font-semibold text-white transition hover:opacity-90 flex items-center justify-center gap-1.5"
                     style={{ background: 'var(--primary)' }}
                   >
-                    {plan === 'pro' ? 'Upgrade to Pro' : 'Get started'}
+                    Upgrade to Pro
                     <ArrowRight className="w-4 h-4" />
-                  </button>
+                  </a>
                 )}
               </div>
             )
           })}
         </div>
+      </motion.div>
+
+      {/* Payment history */}
+      <motion.div variants={staggerItem} className="rounded-2xl border overflow-hidden" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
+        <div className="px-5 py-4 border-b flex items-center gap-2" style={{ borderColor: 'var(--border)' }}>
+          <Receipt className="w-4 h-4" style={{ color: 'var(--primary)' }} />
+          <h2 className="font-bold" style={{ color: 'var(--text-primary)' }}>Payment history</h2>
+        </div>
+        {payments.length === 0 ? (
+          <p className="p-8 text-center text-sm" style={{ color: 'var(--text-secondary)' }}>No payments yet.</p>
+        ) : (
+          <ul>
+            {payments.map((p: any) => (
+              <li key={p.id} className="px-5 py-3.5 flex items-center gap-3 border-b last:border-0 flex-wrap" style={{ borderColor: 'var(--border)' }}>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+                    Pro · {p.seats} seat{p.seats !== 1 ? 's' : ''} · {p.interval}
+                  </p>
+                  <p className="text-xs break-all" style={{ color: 'var(--text-muted)' }}>
+                    {p.paid_at ? format(new Date(p.paid_at), 'd MMM yyyy') : ''} · {p.reference}
+                  </p>
+                </div>
+                <p className="text-sm font-black tabular-nums" style={{ color: 'var(--text-primary)' }}>
+                  {Number(p.amount).toLocaleString()} {p.currency}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
       </motion.div>
 
       {/* Contact */}
