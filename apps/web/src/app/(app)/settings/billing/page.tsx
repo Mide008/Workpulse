@@ -14,12 +14,15 @@ export default async function BillingPage() {
   if (user.roleLevel > 1) redirect('/settings/workspace')
 
   const supabase = await createServerSupabaseClient()
+  
+  // Fetch workspace
   const { data: workspace } = await supabase
     .from('workspaces')
     .select('id, name, plan, plan_seats, plan_expires_at, billing_email')
     .eq('id', user.workspaceId)
     .single()
 
+  // Fetch usage counts
   const { count: memberCount } = await supabase
     .from('users')
     .select('id', { count: 'exact', head: true })
@@ -37,10 +40,21 @@ export default async function BillingPage() {
     .eq('workspace_id', user.workspaceId)
     .is('deleted_at', null)
 
+  // Fetch payment history (for the BillingClient UI)
+  const { data: payments } = await (supabase as any)
+    .from('workspace_payments')
+    .select('*')
+    .eq('workspace_id', user.workspaceId)
+    .order('paid_at', { ascending: false })
+
   return (
     <BillingClient
       workspace={workspace as any}
       usage={{ members: memberCount ?? 0, tasks: taskCount ?? 0, projects: projectCount ?? 0 }}
+      payments={payments ?? []}
+      payEnabled={false}
+      chargeCurrency="USD"
+      usdRate={1}
     />
   )
 }

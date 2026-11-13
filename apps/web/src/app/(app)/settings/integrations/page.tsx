@@ -14,7 +14,7 @@ export default async function IntegrationsPage() {
   if (user.roleLevel > 1) redirect('/settings/workspace')
 
   const supabase = await createServerSupabaseClient()
-  // Cast to any to bypass type checking for workspace_integrations table
+  
   const { data: integrations } = await (supabase as any)
     .from('workspace_integrations')
     .select('*')

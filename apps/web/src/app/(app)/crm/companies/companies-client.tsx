@@ -113,9 +113,13 @@ export default function CompaniesClient({ companies: initial, user }: { companie
               <div className="group p-5 rounded-2xl border transition-all hover:shadow-sm hover:-translate-y-0.5 relative"
                 style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
                 <div className="flex items-start gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-bold text-sm text-white"
-                    style={{ background: 'var(--primary)' }}>
-                    {company.name.charAt(0).toUpperCase()}
+                  {/* FIX: Changed to white background with border to accommodate any logo */}
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-bold text-sm text-black bg-white border border-gray-200 dark:border-zinc-700 overflow-hidden shadow-sm">
+                    {company.logo_url ? (
+                      <img src={company.logo_url} alt={company.name} className="w-full h-full object-contain p-1" />
+                    ) : (
+                      company.name.charAt(0).toUpperCase()
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-sm truncate" style={{ color: 'var(--text-primary)' }}>{company.name}</p>

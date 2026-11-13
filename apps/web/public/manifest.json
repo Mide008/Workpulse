@@ -2,7 +2,7 @@
   "name": "WorkPulse — Team OS",
   "short_name": "WorkPulse",
   "description": "Plan, track, and deliver work with real-time KPI visibility and AI performance insights.",
-  "start_url": "/dashboard",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#020617",
   "theme_color": "#6366F1",
@@ -18,7 +18,8 @@
     { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
   ],
   "screenshots": [
-    { "src": "/screenshots/dashboard.png", "sizes": "1280x720", "type": "image/png", "form_factor": "wide" }
+    { "src": "/screenshots/dashboard.png", "sizes": "1280x720", "type": "image/png", "form_factor": "wide" },
+    { "src": "/screenshots/mobile.png", "sizes": "720x1280", "type": "image/png", "form_factor": "narrow" }
   ],
   "categories": ["business", "productivity"],
   "prefer_related_applications": false

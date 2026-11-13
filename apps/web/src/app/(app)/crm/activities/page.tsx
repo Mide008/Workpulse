@@ -16,9 +16,10 @@ export default async function ActivitiesPage() {
   const supabaseAny = supabase as any
 
   const [{ data: activities }, { data: contacts }, { data: deals }] = await Promise.all([
+    // FIXED: Changed 'crm_activities' to 'activities' and removed explicit FK name
     supabaseAny
-      .from('crm_activities')
-      .select('*, user:users!crm_activities_user_id_fkey(id, full_name, avatar_url), contact:contacts(id, full_name), deal:deals(id, title)')
+      .from('activities')
+      .select('*, user:users(id, full_name, avatar_url), contact:contacts(id, full_name), deal:deals(id, title)')
       .eq('workspace_id', user.workspaceId)
       .order('created_at', { ascending: false })
       .limit(100),

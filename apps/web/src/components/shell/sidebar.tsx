@@ -228,12 +228,12 @@ export default function Sidebar({ user, open, onClose }: SidebarProps) {
               className="px-4 py-3 border-b border-[var(--border)] shrink-0 overflow-hidden"
             >
               <div className="flex items-center gap-3 px-2 py-2 rounded-xl bg-[var(--bg-base)] border border-[var(--border)]">
+                {/* FIX: Changed to white background with border to accommodate any logo */}
                 <div
-                  className="w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold text-white shrink-0 overflow-hidden shadow-sm"
-                  style={{ backgroundColor: user.primaryColor }}
+                  className="w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold text-black shrink-0 overflow-hidden shadow-sm bg-white border border-gray-200 dark:border-zinc-700"
                 >
                   {user.workspaceLogo ? (
-                    <img src={user.workspaceLogo} alt="Logo" className="w-full h-full object-cover" />
+                    <img src={user.workspaceLogo} alt="Logo" className="w-full h-full object-contain p-0.5" />
                   ) : (
                     user.workspaceName.charAt(0).toUpperCase()
                   )}
@@ -253,7 +253,6 @@ export default function Sidebar({ user, open, onClose }: SidebarProps) {
         <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto scrollbar-thin">
           {filteredNav.map(renderNavItem)}
 
-          {/* CRM Section */}
           {showCRM && (
             <div className="mt-6 pt-5 border-t" style={{ borderColor: 'var(--border)' }}>
               {renderSectionLabel('CRM')}
@@ -261,7 +260,6 @@ export default function Sidebar({ user, open, onClose }: SidebarProps) {
             </div>
           )}
 
-          {/* Administration Section */}
           {showAdmin && (
             <div className="mt-6 pt-5 border-t" style={{ borderColor: 'var(--border)' }}>
               {renderSectionLabel('Administration')}
@@ -269,7 +267,6 @@ export default function Sidebar({ user, open, onClose }: SidebarProps) {
             </div>
           )}
 
-          {/* Settings submenu (expanded mode only) */}
           {!collapsed && (
             <div className="mt-6 pt-5 border-t" style={{ borderColor: 'var(--border)' }}>
               <button

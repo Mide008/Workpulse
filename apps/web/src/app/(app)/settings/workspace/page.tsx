@@ -1,3 +1,4 @@
+// apps/web/src/app/(app)/settings/workspace/page.tsx
 export const dynamic = 'force-dynamic'
 
 import { getCurrentUser } from '@/lib/actions/auth'
