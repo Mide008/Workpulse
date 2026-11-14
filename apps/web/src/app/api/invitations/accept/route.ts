@@ -6,7 +6,9 @@ import { createAdminClient } from '@/lib/supabase/server'
 export async function POST(req: NextRequest) {
   try {
     const { token, password, fullName } = await req.json()
-    if (!token || !password || !fullName) return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
+    if (!token || !password || !fullName) {
+      return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
+    }
 
     const supabaseAdmin = createAdminClient()
 
@@ -18,36 +20,52 @@ export async function POST(req: NextRequest) {
       .eq('status', 'pending')
       .single()
 
-    if (inviteError || !invite) return NextResponse.json({ error: 'Invalid or expired invitation' }, { status: 404 })
-    if (new Date(invite.expires_at) < new Date()) return NextResponse.json({ error: 'Invitation expired' }, { status: 400 })
+    if (inviteError || !invite) {
+      return NextResponse.json({ error: 'Invalid or expired invitation' }, { status: 404 })
+    }
+    if (new Date(invite.expires_at) < new Date()) {
+      return NextResponse.json({ error: 'Invitation expired' }, { status: 400 })
+    }
 
-    // 2. Check if user exists in Auth
-    // Cast listUsers() result to User[] — Supabase admin client without a Database
-    // generic infers users as never[], which fails `tsc` on Vercel's clean build.
+    // 2. Check if an Auth user already exists (inviteUserByEmail creates one
+    //    with no password — that's why the client-side sign-in was failing).
     const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers()
     const users = (existingUsers?.users ?? []) as User[]
-    const existingUser = users.find((u) => u.email === invite.email)
+    const existingUser = users.find(
+      (u) => u.email?.toLowerCase() === invite.email.toLowerCase()
+    )
 
-    let userId = existingUser?.id
+    let userId: string
 
     if (existingUser) {
-      // If they already have an account, update their password to the new one
-      await supabaseAdmin.auth.admin.updateUserById(existingUser.id, { password: password })
+      // Set/replace the password on the existing auth user so the client
+      // can sign in immediately after this call returns.
+      const { error: updateErr } = await supabaseAdmin.auth.admin.updateUserById(
+        existingUser.id,
+        { password, email_confirm: true, user_metadata: { full_name: fullName } }
+      )
+      if (updateErr) {
+        console.error('[invite-accept] password update failed:', updateErr)
+        return NextResponse.json({ error: updateErr.message }, { status: 400 })
+      }
+      userId = existingUser.id
     } else {
-      // 3. Create a brand new user
       const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
         email: invite.email,
-        password: password,
+        password,
         email_confirm: true,
         user_metadata: { full_name: fullName },
       })
-      if (authError) return NextResponse.json({ error: authError.message }, { status: 400 })
+      if (authError || !authData.user) {
+        return NextResponse.json(
+          { error: authError?.message ?? 'Failed to create user' },
+          { status: 400 }
+        )
+      }
       userId = authData.user.id
     }
 
-    if (!userId) return NextResponse.json({ error: 'Failed to create user' }, { status: 500 })
-
-    // 4. Link them to the workspace
+    // 3. Link to workspace (idempotent — upsert by primary key)
     const { error: profileError } = await (supabaseAdmin as any).from('users').upsert({
       id: userId,
       workspace_id: invite.workspace_id,
@@ -57,14 +75,24 @@ export async function POST(req: NextRequest) {
       job_title: invite.job_title,
       is_active: true,
     })
+    if (profileError) {
+      console.error('[invite-accept] profile upsert failed:', profileError)
+      return NextResponse.json({ error: profileError.message }, { status: 500 })
+    }
 
-    if (profileError) return NextResponse.json({ error: profileError.message }, { status: 500 })
+    // 4. Mark invite accepted
+    await (supabaseAdmin as any)
+      .from('invitations')
+      .update({ status: 'accepted', accepted_at: new Date().toISOString() })
+      .eq('id', invite.id)
 
-    // 5. Mark invite accepted
-    await (supabaseAdmin as any).from('invitations').update({ status: 'accepted', accepted_at: new Date().toISOString() }).eq('id', invite.id)
-
-    return NextResponse.json({ success: true, email: invite.email })
+    return NextResponse.json({
+      success: true,
+      email: invite.email,
+      existingAccount: Boolean(existingUser),
+    })
   } catch (err: any) {
+    console.error('[invite-accept] unhandled:', err)
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
