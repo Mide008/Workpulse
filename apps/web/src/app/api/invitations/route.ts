@@ -21,18 +21,33 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
   const { email, role } = parsed.data
   const cleanEmail = email.toLowerCase().trim()
 
-  // ----- Email validation (client‑side format + server‑side DNS) -----
   const formatCheck = validateEmailFormat(cleanEmail)
-  if (!formatCheck.valid) {
-    return Response.json({ error: formatCheck.error }, { status: 400 })
-  }
+  if (!formatCheck.valid) return Response.json({ error: formatCheck.error }, { status: 400 })
 
   const domainCheck = await validateEmailDomain(cleanEmail)
-  if (!domainCheck.valid) {
-    return Response.json({ error: domainCheck.error }, { status: 400 })
-  }
+  if (!domainCheck.valid) return Response.json({ error: domainCheck.error }, { status: 400 })
 
   const supabase = await createServerSupabaseClient()
+
+  // ── Duplicate check: existing pending invite for this email? ──
+  const { data: existing } = await supabase
+    .from('invitations')
+    .select('id, token, email, role')
+    .eq('workspace_id', ctx.workspaceId)
+    .eq('email', cleanEmail)
+    .eq('status', 'pending')
+    .maybeSingle()
+
+  if (existing) {
+    const baseUrl = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://workpulse-eta.vercel.app').replace(/\/$/, '')
+    return Response.json({
+      success: true,
+      duplicate: true,
+      alreadyInvited: true,
+      inviteUrl: `${baseUrl}/invite?token=${(existing as any).token}`,
+      message: `An invitation for ${cleanEmail} is already pending. Copy its link from the pending list.`,
+    }, { status: 200 })
+  }
 
   const [{ data: workspace }, { data: inviter }] = await Promise.all([
     supabase.from('workspaces').select('name, primary_color').eq('id', ctx.workspaceId).single(),
@@ -44,7 +59,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
   const brandColor = (workspace as any)?.primary_color ?? '#6366F1'
   const token = crypto.randomUUID()
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://workpulse-web-ten.vercel.app'
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? 'https://workpulse-eta.vercel.app').replace(/\/$/, '')
   const inviteUrl = `${appUrl}/invite?token=${token}`
 
   const { error: insertError } = await supabase.from('invitations').insert({
@@ -59,10 +74,9 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
 
   if (insertError) {
     console.error('Insert error:', insertError)
-    return Response.json({ error: 'Failed to create invitation' }, { status: 500 })
+    return Response.json({ error: insertError.message }, { status: 500 })
   }
 
-  // ---- Onboarding step tracking (cast to any to fix TypeScript) ----
   await (supabase as any).rpc('mark_onboarding_step', {
     workspace_id_param: ctx.workspaceId,
     step_name: 'invited_member',
@@ -70,7 +84,6 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
 
   let emailSent = false
 
-  // Try Supabase Admin invite first (works for new users, sends Supabase's own email)
   try {
     const adminClient = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -81,17 +94,11 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
       redirectTo: inviteUrl,
       data: { workspace_id: ctx.workspaceId, role, workspace_name: workspaceName },
     })
-    if (!error) {
-      emailSent = true
-      console.log('Supabase invite sent to:', cleanEmail)
-    } else {
-      console.log('Supabase invite note:', error.message)
-    }
+    if (!error) { emailSent = true } else { console.log('Supabase invite note:', error.message) }
   } catch (err: any) {
     console.error('Supabase admin error:', err?.message)
   }
 
-  // Try Resend if Supabase failed (existing users)
   if (!emailSent && process.env.RESEND_API_KEY) {
     try {
       const fromEmail = process.env.RESEND_FROM_EMAIL ?? 'onboarding@resend.dev'
@@ -108,8 +115,6 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
           html: buildInviteHtml({ inviterName, workspaceName, role, inviteUrl, brandColor }),
         }),
       })
-      const resBody = await res.json()
-      console.log('Resend response:', res.status, JSON.stringify(resBody))
       if (res.ok) emailSent = true
     } catch (err: any) {
       console.error('Resend error:', err?.message)
