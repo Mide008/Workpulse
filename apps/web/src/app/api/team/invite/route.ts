@@ -6,12 +6,9 @@ import { randomBytes } from 'crypto'
 function resolveBaseUrl(): string {
   let baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://workpulse-eta.vercel.app'
   if (baseUrl.includes('localhost')) baseUrl = 'https://workpulse-eta.vercel.app'
-  if (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1)
-  return baseUrl
+  return baseUrl.replace(/\/$/, '')
 }
 
-// GET — list pending invitations for the current workspace, with copyable links.
-// Additive endpoint. POST contract below is unchanged.
 export async function GET() {
   try {
     const sb = await createServerSupabaseClient()
@@ -54,10 +51,31 @@ export async function POST(req: NextRequest) {
     if (!workspaceId) return NextResponse.json({ error: 'No workspace attached' }, { status: 400 })
 
     const { email, fullName, roleId, jobTitle } = await req.json()
+    const cleanEmail = String(email ?? '').toLowerCase().trim()
+    if (!cleanEmail) return NextResponse.json({ error: 'Missing email' }, { status: 400 })
 
-    // Ensure we have the exact UUID of the role
+    // ── Duplicate check ──
+    const { data: existing } = await (sb as any)
+      .from('invitations')
+      .select('id, token, email, role:roles(name)')
+      .eq('workspace_id', workspaceId)
+      .eq('email', cleanEmail)
+      .eq('status', 'pending')
+      .maybeSingle()
+
+    if (existing) {
+      return NextResponse.json({
+        success: true,
+        duplicate: true,
+        alreadyInvited: true,
+        invite: existing,
+        inviteLink: `${resolveBaseUrl()}/invite?token=${existing.token}`,
+        message: `An invitation for ${cleanEmail} is already pending. Copy its link from the list.`,
+      }, { status: 200 })
+    }
+
     let finalRoleId = roleId
-    if (roleId.length < 10) {
+    if (roleId && roleId.length < 10) {
       const { data: roleData } = await sb.from('roles').select('id').eq('workspace_id', workspaceId).ilike('name', roleId).single()
       if (roleData) finalRoleId = roleData.id
     }
@@ -69,20 +87,21 @@ export async function POST(req: NextRequest) {
     const { data: invite, error } = await (sb as any).from('invitations').insert({
       workspace_id: workspaceId,
       invited_by: user.id,
-      email: email.toLowerCase().trim(),
+      email: cleanEmail,
       full_name: fullName,
       job_title: jobTitle,
-      role_id: finalRoleId, // Save the exact UUID
-      token: token,
+      role_id: finalRoleId,
+      token,
       expires_at: expiresAt.toISOString(),
-      status: 'pending'
+      status: 'pending',
     }).select('*, role:roles(name)').single()
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-    const inviteLink = `${resolveBaseUrl()}/invite?token=${token}`
-
-    return NextResponse.json({ success: true, invite, inviteLink }, { status: 201 })
+    return NextResponse.json(
+      { success: true, invite, inviteLink: `${resolveBaseUrl()}/invite?token=${token}` },
+      { status: 201 }
+    )
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
