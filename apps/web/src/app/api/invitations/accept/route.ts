@@ -1,5 +1,6 @@
 // apps/web/src/app/api/invitations/accept/route.ts
 import { NextRequest, NextResponse } from 'next/server'
+import type { User } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/server'
 
 export async function POST(req: NextRequest) {
@@ -21,13 +22,16 @@ export async function POST(req: NextRequest) {
     if (new Date(invite.expires_at) < new Date()) return NextResponse.json({ error: 'Invitation expired' }, { status: 400 })
 
     // 2. Check if user exists in Auth
+    // Cast listUsers() result to User[] — Supabase admin client without a Database
+    // generic infers users as never[], which fails `tsc` on Vercel's clean build.
     const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers()
-    const existingUser = existingUsers.users.find(u => u.email === invite.email)
+    const users = (existingUsers?.users ?? []) as User[]
+    const existingUser = users.find((u) => u.email === invite.email)
 
     let userId = existingUser?.id
 
     if (existingUser) {
-      // FIX: If they already have an account, update their password to the new one
+      // If they already have an account, update their password to the new one
       await supabaseAdmin.auth.admin.updateUserById(existingUser.id, { password: password })
     } else {
       // 3. Create a brand new user
