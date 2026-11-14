@@ -15,6 +15,7 @@ export async function POST(req: NextRequest) {
 
     const { email, fullName, roleId, jobTitle } = await req.json()
 
+    // Ensure we have the exact UUID of the role
     let finalRoleId = roleId
     if (roleId.length < 10) {
       const { data: roleData } = await sb.from('roles').select('id').eq('workspace_id', workspaceId).ilike('name', roleId).single()
@@ -27,20 +28,17 @@ export async function POST(req: NextRequest) {
 
     const { data: invite, error } = await (sb as any).from('invitations').insert({
       workspace_id: workspaceId,
-      invited_by: user.id, // 🔥 FIX: Added the missing invited_by column
+      invited_by: user.id,
       email: email.toLowerCase().trim(),
       full_name: fullName,
       job_title: jobTitle,
-      role_id: finalRoleId,
+      role_id: finalRoleId, // Save the exact UUID
       token: token,
       expires_at: expiresAt.toISOString(),
       status: 'pending'
     }).select('*, role:roles(name)').single()
 
-    if (error) {
-      console.error('Invite error:', error)
-      return NextResponse.json({ error: error.message }, { status: 500 })
-    }
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
     let baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://workpulse-eta.vercel.app'
     if (baseUrl.includes('localhost')) baseUrl = 'https://workpulse-eta.vercel.app'
