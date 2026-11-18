@@ -1,10 +1,10 @@
 // apps/web/src/app/(app)/team/team-client.tsx
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
-import { Search, Users, Mail, CheckCircle2, Clock, AlertTriangle, Plus, X, ChevronDown } from 'lucide-react'
+import { Search, Users, Mail, CheckCircle2, Clock, AlertTriangle, Plus, X, ChevronDown, Copy, Trash2 } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -39,10 +39,27 @@ export default function TeamClient({
   roles?: any[]
 }) {
   const [members, setMembers] = useState(initialMembers)
+  const [pendingInvites, setPendingInvites] = useState<any[]>([])
   const [search, setSearch] = useState('')
   const [filterRole, setFilterRole] = useState('all')
   const [showInviteModal, setShowInviteModal] = useState(false)
   const isManager = currentUser?.roleLevel <= 2
+
+  const fetchInvites = async () => {
+    try {
+      const res = await fetch('/api/team/invite')
+      if (res.ok) {
+        const data = await res.json()
+        setPendingInvites(data.invites || [])
+      }
+    } catch (err) {
+      console.error('Failed to load invites', err)
+    }
+  }
+
+  useEffect(() => {
+    if (isManager) fetchInvites()
+  }, [isManager])
 
   const {
     register,
@@ -96,20 +113,43 @@ export default function TeamClient({
         body: JSON.stringify(data),
       })
 
+      const json = await res.json().catch(() => ({}))
+
       if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}))
-        throw new Error(errorData.message || 'Failed to send invite')
+        throw new Error(json.error || json.message || 'Failed to send invite')
       }
 
-      const { member } = await res.json()
-      if (member) {
-        setMembers(prev => [...prev, member])
+      if (json.duplicate) {
+        toast.info(json.message || 'This email already has a pending invite.')
+      } else {
+        toast.success('Invitation sent to team member')
       }
-      toast.success('Invitation sent to team member')
+      
       reset()
       setShowInviteModal(false)
+      fetchInvites() // Refresh the pending list
     } catch (error: any) {
-      toast.error(error.message || 'Could not complete invitation. Check details or permissions.')
+      toast.error(error.message || 'Could not complete invitation.')
+    }
+  }
+
+  const handleCopyLink = (link: string) => {
+    navigator.clipboard.writeText(link)
+    toast.success('Invite link copied to clipboard')
+  }
+
+  const handleRevoke = async (id: string) => {
+    if (!confirm('Are you sure you want to revoke this invite?')) return
+    try {
+      const res = await fetch(`/api/team/invite/${id}`, { method: 'DELETE' })
+      if (res.ok) {
+        toast.success('Invite revoked')
+        fetchInvites()
+      } else {
+        toast.error('Failed to revoke invite')
+      }
+    } catch (err) {
+      toast.error('Error revoking invite')
     }
   }
 
@@ -123,14 +163,38 @@ export default function TeamClient({
           </p>
         </div>
         {isManager && (
-          <Button
-            variant="primary"
-            onClick={() => setShowInviteModal(true)}
-          >
+          <Button variant="primary" onClick={() => setShowInviteModal(true)}>
             <Plus className="w-4 h-4 mr-2" /> Add Member
           </Button>
         )}
       </div>
+
+      {/* PENDING INVITES SECTION */}
+      {isManager && pendingInvites.length > 0 && (
+        <div className="bg-[var(--bg-surface)] border border-white/5 rounded-2xl p-5">
+          <h2 className="text-sm font-semibold text-[var(--text-primary)] mb-3 flex items-center gap-2">
+            <Mail className="w-4 h-4 text-indigo-400" /> Pending Invitations ({pendingInvites.length})
+          </h2>
+          <div className="space-y-3">
+            {pendingInvites.map(inv => (
+              <div key={inv.id} className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/5">
+                <div>
+                  <p className="text-sm font-medium text-[var(--text-primary)]">{inv.email}</p>
+                  <p className="text-xs text-[var(--text-secondary)]">Role: {inv.role?.name || 'Member'} • Expires: {new Date(inv.expires_at).toLocaleDateString()}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => handleCopyLink(inv.inviteLink)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 rounded-lg transition-colors">
+                    <Copy className="w-3.5 h-3.5" /> Copy Link
+                  </button>
+                  <button onClick={() => handleRevoke(inv.id)} className="p-1.5 text-red-400 hover:bg-red-400/10 rounded-lg transition-colors" title="Revoke">
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-[12rem]">
@@ -144,18 +208,11 @@ export default function TeamClient({
           />
         </div>
         <div className="flex items-center gap-1 bg-white/[0.04] border border-white/10 rounded-xl p-1">
-          <ToggleButton
-            active={filterRole === 'all'}
-            onClick={() => setFilterRole('all')}
-          >
+          <ToggleButton active={filterRole === 'all'} onClick={() => setFilterRole('all')}>
             All
           </ToggleButton>
           {roles.map(role => (
-            <ToggleButton
-              key={role}
-              active={filterRole === role}
-              onClick={() => setFilterRole(role)}
-            >
+            <ToggleButton key={role} active={filterRole === role} onClick={() => setFilterRole(role)}>
               {role}
             </ToggleButton>
           ))}
@@ -163,12 +220,16 @@ export default function TeamClient({
       </div>
 
       {filtered.length === 0 ? (
-        <EmptyState
-          icon={<Users className="w-7 h-7" />}
-          title="Your team is empty"
-          description="Invite colleagues to your workspace so they can log tasks, track goals, and contribute to your team's KPI scores."
-          action={{ label: 'Invite team member', href: '/settings/workspace' }}
-        />
+        <div className="p-8 text-center bg-[var(--bg-surface)] border border-white/5 rounded-2xl">
+          <Users className="w-10 h-10 mx-auto text-[var(--text-muted)] mb-3" />
+          <h3 className="text-lg font-bold text-[var(--text-primary)]">No members found</h3>
+          <p className="text-sm text-[var(--text-secondary)] mt-1 mb-4">Invite colleagues to your workspace.</p>
+          {isManager && (
+            <Button variant="primary" onClick={() => setShowInviteModal(true)}>
+              Invite team member
+            </Button>
+          )}
+        </div>
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filtered.map((member, i) => {
@@ -241,6 +302,7 @@ export default function TeamClient({
         </div>
       )}
 
+      {/* INVITE MODAL */}
       <AnimatePresence>
         {showInviteModal && (
           <motion.div
@@ -324,19 +386,10 @@ export default function TeamClient({
                 </div>
 
                 <div className="flex gap-3 pt-2">
-                  <Button
-                    type="submit"
-                    variant="primary"
-                    className="flex-1"
-                    disabled={isSubmitting}
-                  >
+                  <Button type="submit" variant="primary" className="flex-1" disabled={isSubmitting}>
                     {isSubmitting ? 'Sending...' : 'Add Member'}
                   </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => setShowInviteModal(false)}
-                  >
+                  <Button type="button" variant="ghost" onClick={() => setShowInviteModal(false)}>
                     Cancel
                   </Button>
                 </div>

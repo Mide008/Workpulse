@@ -9,7 +9,7 @@ import { ease, spring } from '@/lib/motion'
 import AnimatedCounter from '@/components/motion/animated-counter'
 
 const TYPES = [
-  { value: 'leave', label: 'Leave', icon: Calendar, color: '#818CF8' },
+  { value: 'leave', label: 'Leave', icon: Calendar, color: 'var(--primary)' },
   { value: 'expense', label: 'Expense', icon: DollarSign, color: '#34D399' },
   { value: 'purchase', label: 'Purchase', icon: ShoppingBag, color: '#FBBF24' },
   { value: 'document', label: 'Document sign-off', icon: FileText, color: '#A78BFA' },
@@ -23,7 +23,7 @@ const STATUS = {
 } as const
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'NGN', 'KES', 'GHS', 'ZAR', 'INR', 'AED', 'CAD', 'AUD', 'SGD']
 
-const fieldCls = 'w-full h-11 px-4 rounded-xl border text-[15px] focus:outline-none focus:ring-2 focus:ring-indigo-400/40 transition-all'
+const fieldCls = 'w-full h-11 px-4 rounded-xl border text-[15px] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40 transition-all'
 const money = (n: any, c = 'USD') => { try { return new Intl.NumberFormat(undefined, { style: 'currency', currency: c, maximumFractionDigits: 2 }).format(Number(n)) } catch { return `${c} ${n}` } }
 
 function Initials({ name }: { name?: string }) {
@@ -87,7 +87,7 @@ export default function ApprovalsClient({ user }: { user: { id: string; fullName
         </div>
         <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.96 }} onClick={() => setShowNew(true)}
           className="btn-shine h-11 px-5 rounded-xl text-sm font-bold text-white flex items-center gap-2"
-          style={{ background: 'linear-gradient(135deg,#6366F1,#8B5CF6)', boxShadow: '0 8px 22px rgba(99,102,241,.35)' }}>
+          style={{ background: 'var(--primary)', boxShadow: '0 8px 22px color-mix(in srgb, var(--primary) 35%, transparent)' }}>
           <Plus className="w-4 h-4" />New request
         </motion.button>
       </div>
@@ -162,7 +162,9 @@ function ApprovalCard({ a, me, isManager, fresh, onDecide, onCancel }: any) {
       className="rounded-2xl border overflow-hidden" style={{ background: 'var(--bg-surface)', borderColor: fresh ? 'var(--primary)' : 'var(--border)', boxShadow: fresh ? '0 0 0 4px color-mix(in srgb, var(--primary) 20%, transparent)' : 'none' }}>
       <div className="p-4 sm:p-5">
         <div className="flex items-start gap-3">
-          <span className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${t.color}22` }}><t.icon className="w-5 h-5" style={{ color: t.color }} /></span>
+          <span className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: t.color === 'var(--primary)' ? 'color-mix(in srgb, var(--primary) 15%, transparent)' : `${t.color}22` }}>
+            <t.icon className="w-5 h-5" style={{ color: t.color }} />
+          </span>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="font-bold text-[15px] sm:text-base break-words" style={{ color: 'var(--text-primary)' }}>{a.title}</h3>
@@ -188,7 +190,7 @@ function ApprovalCard({ a, me, isManager, fresh, onDecide, onCancel }: any) {
           <div className="mt-4">
             <AnimatePresence initial={false}>{declining && (
               <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden mb-3">
-                <textarea value={note} onChange={e => setNote(e.target.value)} rows={2} placeholder="Add a reason (optional)" className="w-full px-4 py-3 rounded-xl border text-[15px] resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400/40" />
+                <textarea value={note} onChange={e => setNote(e.target.value)} rows={2} placeholder="Add a reason (optional)" className="w-full px-4 py-3 rounded-xl border text-[15px] resize-none focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40" />
               </motion.div>
             )}</AnimatePresence>
             <div className="flex gap-2">
@@ -254,7 +256,7 @@ function NewRequestSheet({ open, onClose, onCreated }: { open: boolean; onClose:
                 {TYPES.map(t => (
                   <button key={t.value} type="button" onClick={() => set('type', t.value)} aria-pressed={f.type === t.value}
                     className="min-h-[48px] px-3 rounded-xl border text-sm font-semibold flex items-center gap-2 text-left transition-colors"
-                    style={f.type === t.value ? { background: `${t.color}22`, borderColor: t.color, color: t.color } : { background: 'var(--bg-elevated)', borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>
+                    style={f.type === t.value ? { background: t.color === 'var(--primary)' ? 'color-mix(in srgb, var(--primary) 15%, transparent)' : `${t.color}22`, borderColor: t.color, color: t.color } : { background: 'var(--bg-elevated)', borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>
                     <t.icon className="w-4 h-4 shrink-0" />{t.label}
                   </button>
                 ))}
@@ -262,7 +264,7 @@ function NewRequestSheet({ open, onClose, onCreated }: { open: boolean; onClose:
               <div><label htmlFor="ap-title" className="block text-sm font-semibold mb-1.5" style={{ color: 'var(--text-primary)' }}>Title</label>
                 <input id="ap-title" value={f.title} onChange={e => set('title', e.target.value)} placeholder="What do you need approved?" className={fieldCls} autoFocus /></div>
               <div><label htmlFor="ap-desc" className="block text-sm font-semibold mb-1.5" style={{ color: 'var(--text-primary)' }}>Details <span className="font-normal" style={{ color: 'var(--text-muted)' }}>(optional)</span></label>
-                <textarea id="ap-desc" value={f.description} onChange={e => set('description', e.target.value)} rows={3} placeholder="Add context, links or supporting information" className="w-full px-4 py-3 rounded-xl border text-[15px] resize-none focus:outline-none focus:ring-2 focus:ring-indigo-400/40" /></div>
+                <textarea id="ap-desc" value={f.description} onChange={e => set('description', e.target.value)} rows={3} placeholder="Add context, links or supporting information" className="w-full px-4 py-3 rounded-xl border text-[15px] resize-none focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40" /></div>
               {needsDates && <div className="grid grid-cols-2 gap-3">
                 <div><label className="block text-sm font-semibold mb-1.5" style={{ color: 'var(--text-primary)' }}>From</label><input type="date" value={f.startDate} onChange={e => set('startDate', e.target.value)} className={fieldCls} /></div>
                 <div><label className="block text-sm font-semibold mb-1.5" style={{ color: 'var(--text-primary)' }}>To</label><input type="date" value={f.endDate} min={f.startDate} onChange={e => set('endDate', e.target.value)} className={fieldCls} /></div></div>}
@@ -270,7 +272,7 @@ function NewRequestSheet({ open, onClose, onCreated }: { open: boolean; onClose:
                 <div className="col-span-2"><label className="block text-sm font-semibold mb-1.5" style={{ color: 'var(--text-primary)' }}>Amount</label><input type="number" inputMode="decimal" min="0" step="0.01" value={f.amount} onChange={e => set('amount', e.target.value)} placeholder="0.00" className={fieldCls} /></div>
                 <div><label className="block text-sm font-semibold mb-1.5" style={{ color: 'var(--text-primary)' }}>Currency</label><select value={f.currency} onChange={e => set('currency', e.target.value)} className={fieldCls}>{CURRENCIES.map(c => <option key={c}>{c}</option>)}</select></div></div>}
               {err && <p role="alert" className="text-sm font-semibold rounded-xl p-3 break-words" style={{ background: 'rgba(239,68,68,.12)', color: '#F87171' }}>{err}</p>}
-              <motion.button whileTap={{ scale: 0.97 }} type="submit" disabled={busy} className="btn-shine w-full h-12 rounded-xl text-base font-bold text-white flex items-center justify-center gap-2 disabled:opacity-60" style={{ background: 'linear-gradient(135deg,#6366F1,#8B5CF6)' }}>
+              <motion.button whileTap={{ scale: 0.97 }} type="submit" disabled={busy} className="btn-shine w-full h-12 rounded-xl text-base font-bold text-white flex items-center justify-center gap-2 disabled:opacity-60" style={{ background: 'var(--primary)' }}>
                 {busy ? <><Loader2 className="w-4 h-4 animate-spin" />Submitting…</> : <><Send className="w-4 h-4" />Submit request</>}
               </motion.button>
             </form>

@@ -7,10 +7,9 @@ import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   ArrowLeft, CheckCircle2, Clock, AlertTriangle, Circle,
-  Edit3, Save, X, Trash2, Flag, Calendar, User,
-  FolderKanban, MessageSquare, Activity, Loader2,
-  ChevronDown, Send, ShieldAlert, CheckCheck, Tag,
-  MoreHorizontal,
+  Edit3, Save, X, Trash2, Calendar,
+  MessageSquare, Activity, Loader2,
+  ChevronDown, Send, ShieldAlert, CheckCheck,
 } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
@@ -45,7 +44,7 @@ function ActivityIcon({ action }: { action: string }) {
   if (action.includes('status')) return <div className="w-2 h-2 rounded-full bg-blue-500" />
   if (action.includes('blocked')) return <div className="w-2 h-2 rounded-full bg-red-500" />
   if (action.includes('resolved')) return <div className="w-2 h-2 rounded-full bg-purple-500" />
-  if (action.includes('commented')) return <div className="w-2 h-2 rounded-full bg-indigo-500" />
+  if (action.includes('commented')) return <div className="w-2 h-2 rounded-full bg-[var(--primary)]" />
   if (action.includes('assigned')) return <div className="w-2 h-2 rounded-full bg-amber-500" />
   return <div className="w-2 h-2 rounded-full bg-slate-500" />
 }
@@ -102,7 +101,7 @@ export default function TaskDetailClient({ taskId, user }: { taskId: string; use
       title: t.title,
       description: t.description ?? '',
     })
-  }, [taskId])
+  }, [taskId, router])
 
   useEffect(() => {
     Promise.all([
@@ -111,9 +110,9 @@ export default function TaskDetailClient({ taskId, user }: { taskId: string; use
       supabase.from('users').select('id, full_name, avatar_url').eq('workspace_id', user.workspaceId)
         .then(({ data }) => setMembers(data ?? [])),
     ]).finally(() => setLoading(false))
-  }, [fetchTask])
+  }, [fetchTask, user.workspaceId, supabase])
 
-  // Real-time comments – cast supabase to any throughout
+  // Real-time comments
   useEffect(() => {
     if (!task) return
     const channel = (supabase as any)
@@ -121,8 +120,7 @@ export default function TaskDetailClient({ taskId, user }: { taskId: string; use
       .on('postgres_changes', {
         event: 'INSERT', schema: 'public', table: 'task_comments',
         filter: `task_id=eq.${taskId}`,
-      }, async (payload) => {
-        // Cast supabase to any here as well
+      }, async (payload: any) => {
         const { data } = await (supabase as any)
           .from('task_comments')
           .select('*, user:users!task_comments_user_id_fkey(id, full_name, avatar_url)')
@@ -132,7 +130,7 @@ export default function TaskDetailClient({ taskId, user }: { taskId: string; use
       })
       .subscribe()
     return () => { supabase.removeChannel(channel) }
-  }, [task, taskId])
+  }, [task, taskId, supabase])
 
   async function updateTask(field: string, value: any) {
     setSaving(true)
@@ -283,7 +281,7 @@ export default function TaskDetailClient({ taskId, user }: { taskId: string; use
                 <input
                   value={editValues.title}
                   onChange={e => setEditValues(p => ({ ...p, title: e.target.value }))}
-                  className="w-full text-2xl font-bold bg-transparent outline-none border-b-2 border-indigo-500 pb-1"
+                  className="w-full text-2xl font-bold bg-transparent outline-none border-b-2 border-[var(--primary)] pb-1"
                   style={{ color: 'var(--text-primary)' }}
                   autoFocus
                   onKeyDown={e => {
@@ -345,7 +343,7 @@ export default function TaskDetailClient({ taskId, user }: { taskId: string; use
                     onChange={e => setEditValues(p => ({ ...p, description: e.target.value }))}
                     rows={5}
                     placeholder="Add a description..."
-                    className="w-full text-sm rounded-xl border p-3 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                    className="w-full text-sm rounded-xl border p-3 resize-none focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/40"
                     style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                     autoFocus
                   />
@@ -391,7 +389,7 @@ export default function TaskDetailClient({ taskId, user }: { taskId: string; use
                 onChange={e => setTask((p: any) => ({ ...p, progress: Number(e.target.value) }))}
                 onMouseUp={e => updateTask('progress', Number((e.target as HTMLInputElement).value))}
                 onTouchEnd={e => updateTask('progress', Number((e.target as HTMLInputElement).value))}
-                className="w-full h-2 rounded-full appearance-none cursor-pointer accent-indigo-600"
+                className="w-full h-2 rounded-full appearance-none cursor-pointer"
                 style={{ accentColor: 'var(--primary)' }}
               />
             </div>
@@ -450,7 +448,7 @@ export default function TaskDetailClient({ taskId, user }: { taskId: string; use
                   onClick={() => setTab(t as Tab)}
                   className={cn(
                     'flex items-center gap-2 px-5 py-3.5 text-sm font-medium transition-all border-b-2',
-                    tab === t ? 'border-indigo-500' : 'border-transparent'
+                    tab === t ? 'border-[var(--primary)]' : 'border-transparent'
                   )}
                   style={{
                     color: tab === t ? 'var(--primary)' : 'var(--text-secondary)',
@@ -518,7 +516,7 @@ export default function TaskDetailClient({ taskId, user }: { taskId: string; use
                         onKeyDown={e => {
                           if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) sendComment()
                         }}
-                        className="w-full rounded-2xl border px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all"
+                        className="w-full rounded-2xl border px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/30 transition-all"
                         style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                       />
                       <div className="flex items-center justify-between mt-2">
@@ -659,7 +657,7 @@ export default function TaskDetailClient({ taskId, user }: { taskId: string; use
             <select
               value={task.assigned_to ?? ''}
               onChange={e => updateTask('assigned_to', e.target.value || null)}
-              className="w-full rounded-xl border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+              className="w-full rounded-xl border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/30"
               style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
             >
               <option value="">Unassigned</option>
@@ -685,7 +683,7 @@ export default function TaskDetailClient({ taskId, user }: { taskId: string; use
               type="date"
               value={task.due_date ? task.due_date.split('T')[0] : ''}
               onChange={e => updateTask('due_date', e.target.value || null)}
-              className="w-full rounded-xl border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+              className="w-full rounded-xl border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/30"
               style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
             />
             {task.due_date && (
@@ -702,7 +700,7 @@ export default function TaskDetailClient({ taskId, user }: { taskId: string; use
             <select
               value={task.project_id ?? ''}
               onChange={e => updateTask('project_id', e.target.value || null)}
-              className="w-full rounded-xl border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+              className="w-full rounded-xl border px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/30"
               style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
             >
               <option value="">No project</option>

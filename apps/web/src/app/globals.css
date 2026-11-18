@@ -19,7 +19,7 @@
   --shadow-lg: 0 10px 40px rgba(15, 23, 42, 0.06);
   --primary: #4F46E5;
   --segmented-bg: #E2E8F0;
-  --segmented-btn-active-bg: #4F46E5;
+  --segmented-btn-active-bg: var(--primary);
   --segmented-btn-active-text: #FFFFFF;
   --segmented-btn-inactive-text: #475569;
   --avatar-purple-bg: #EDE9FE;
@@ -43,7 +43,7 @@
   --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.4);
   --primary: #818CF8;
   --segmented-bg: #0F172A;
-  --segmented-btn-active-bg: #818CF8;
+  --segmented-btn-active-bg: var(--primary);
   --segmented-btn-active-text: #020617;
   --segmented-btn-inactive-text: #94A3B8;
   --avatar-purple-bg: #6B21A8;
@@ -69,7 +69,7 @@ input::placeholder { color: var(--text-muted) !important; }
 @keyframes slide-in-right { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: translateX(0); } }
 @keyframes slide-in-left { from { opacity: 0; transform: translateX(-16px); } to { opacity: 1; transform: translateX(0); } }
 @keyframes slide-up { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4); } 70% { box-shadow: 0 0 0 8px rgba(99, 102, 241, 0); } 100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); } }
+@keyframes pulse-ring { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 40%, transparent); } 70% { box-shadow: 0 0 0 8px color-mix(in srgb, var(--primary) 0%, transparent); } 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--primary) 0%, transparent); } }
 @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-6px); } }
 
 .animate-fade-in { animation: fade-in 0.4s ease-out forwards; }
@@ -90,11 +90,11 @@ input::placeholder { color: var(--text-muted) !important; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 999px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
-::selection { background: rgba(99,102,241,0.3); color: white; }
-:focus-visible { outline: 2px solid rgba(99,102,241,0.6); outline-offset: 2px; border-radius: 4px; }
+::selection { background: color-mix(in srgb, var(--primary) 30%, transparent); color: white; }
+:focus-visible { outline: 2px solid color-mix(in srgb, var(--primary) 60%, transparent); outline-offset: 2px; border-radius: 4px; }
 
 .glass { background: var(--bg-overlay); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--border); }
-.gradient-text { background: linear-gradient(135deg, #818cf8, #c084fc, #e879f9); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.gradient-text { background: linear-gradient(135deg, var(--primary), color-mix(in srgb, var(--primary) 60%, #c084fc)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
 .safe-area-bottom { padding-bottom: env(safe-area-inset-bottom); }
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 * { -webkit-overflow-scrolling: touch; }
@@ -129,7 +129,7 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 [data-theme="dark"] .auth-panel-subtext { color: #94a3b8 !important; }
 [data-theme="dark"] .auth-panel-stat { color: #a5b4fc !important; }
 [data-theme="dark"] .onboarding-step-label { color: #94a3b8 !important; }
-[data-theme="dark"] .onboarding-step-active { color: #818cf8 !important; }
+[data-theme="dark"] .onboarding-step-active { color: var(--primary) !important; }
 
 .skip-link { position: absolute; top: -48px; left: 6px; z-index: 9999; padding: 8px 16px; border-radius: 10px; font-size: 14px; font-weight: 600; background: var(--primary); color: #fff; transition: top 0.12s; }
 .skip-link:focus { top: 6px; }
@@ -149,7 +149,7 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 .pill-success { background: rgba(16,185,129,0.12); color: #10B981; border: 1px solid rgba(16,185,129,0.2); }
 .pill-warning { background: rgba(245,158,11,0.12); color: #F59E0B; border: 1px solid rgba(245,158,11,0.2); }
 .pill-danger  { background: rgba(239,68,68,0.12);  color: #EF4444; border: 1px solid rgba(239,68,68,0.2);  }
-.pill-info    { background: rgba(99,102,241,0.12);  color: var(--primary); border: 1px solid rgba(99,102,241,0.2); }
+.pill-info    { background: color-mix(in srgb, var(--primary) 12%, transparent);  color: var(--primary); border: 1px solid color-mix(in srgb, var(--primary) 20%, transparent); }
 .pill-neutral { background: var(--bg-elevated);     color: var(--text-secondary); border: 1px solid var(--border); }
 
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -167,8 +167,8 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 .surface { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 20px; }
 .surface-hover { transition: border-color .25s, box-shadow .25s, transform .25s; }
 .surface-hover:hover { border-color: var(--border-strong); box-shadow: var(--shadow-lg); transform: translateY(-2px); }
-.aurora { background: radial-gradient(60% 50% at 20% 0%, rgba(99,102,241,.22), transparent 70%), radial-gradient(50% 40% at 90% 20%, rgba(168,85,247,.16), transparent 70%), radial-gradient(40% 40% at 50% 100%, rgba(16,185,129,.10), transparent 70%); }
-.grid-lines { background-image: linear-gradient(rgba(129,140,248,.07) 1px, transparent 1px), linear-gradient(90deg, rgba(129,140,248,.07) 1px, transparent 1px); background-size: 56px 56px; mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 40%, transparent 100%); -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 40%, transparent 100%); }
+.aurora { background: radial-gradient(60% 50% at 20% 0%, color-mix(in srgb, var(--primary) 22%, transparent), transparent 70%), radial-gradient(50% 40% at 90% 20%, rgba(168,85,247,.16), transparent 70%), radial-gradient(40% 40% at 50% 100%, rgba(16,185,129,.10), transparent 70%); }
+.grid-lines { background-image: linear-gradient(color-mix(in srgb, var(--primary) 7%, transparent) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, var(--primary) 7%, transparent) 1px, transparent 1px); background-size: 56px 56px; mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 40%, transparent 100%); -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 40%, transparent 100%); }
 .btn-shine { position: relative; overflow: hidden; }
 .btn-shine::after { content:''; position:absolute; inset:0; transform: translateX(-120%); background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,.28) 50%, transparent 70%); transition: transform .7s cubic-bezier(.19,1,.22,1); }
 .btn-shine:hover::after { transform: translateX(120%); }

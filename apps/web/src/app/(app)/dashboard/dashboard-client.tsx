@@ -38,7 +38,7 @@ function Ring({ value, color }: { value: number; color: string }) {
       <circle cx="64" cy="64" r={r} fill="none" stroke="var(--bg-elevated)" strokeWidth="12" />
       <motion.circle cx="64" cy="64" r={r} fill="none" stroke={color} strokeWidth="12" strokeLinecap="round"
         strokeDasharray={c} initial={{ strokeDashoffset: c }} animate={{ strokeDashoffset: c * (1 - value / 100) }}
-        transition={{ duration: 1.4, ease: ease.expo, delay: 0.3 }} style={{ filter: `drop-shadow(0 0 8px ${color}66)` }} />
+        transition={{ duration: 1.4, ease: ease.expo, delay: 0.3 }} style={{ filter: `drop-shadow(0 0 8px ${color === 'var(--primary)' ? 'color-mix(in srgb, var(--primary) 40%, transparent)' : `${color}66`})` }} />
     </svg>
   )
 }
@@ -89,7 +89,7 @@ export default function DashboardClient({
   }), [tasks])
 
   const completionRate = stats.total > 0 ? Math.round((stats.done / stats.total) * 100) : 0
-  const ringColor = completionRate >= 80 ? '#34D399' : completionRate >= 50 ? '#818CF8' : '#F59E0B'
+  const ringColor = completionRate >= 80 ? '#34D399' : completionRate >= 50 ? 'var(--primary)' : '#F59E0B'
   const activeTasks = tasks.filter(t => t.status !== 'done').slice(0, 6)
   const activeProjects = projects.filter(p => p.status === 'active').slice(0, 4)
   const isManager = user?.roleLevel <= 2
@@ -103,7 +103,7 @@ export default function DashboardClient({
   ].filter(Boolean) as { href: string; text: string; color: string }[]
 
   const tiles = [
-    { label: 'Total tasks', value: stats.total, icon: CheckSquare, color: '#818CF8', sub: `${completionRate}% complete` },
+    { label: 'Total tasks', value: stats.total, icon: CheckSquare, color: 'var(--primary)', sub: `${completionRate}% complete` },
     { label: 'In progress', value: stats.inProgress, icon: Clock, color: '#60A5FA', sub: 'Active right now' },
     { label: 'Blocked', value: stats.blocked, icon: AlertTriangle, color: '#F87171', sub: stats.blocked > 0 ? 'Needs attention' : 'All clear' },
     { label: 'Completed', value: stats.done, icon: TrendingUp, color: '#34D399', sub: stats.overdue > 0 ? `${stats.overdue} overdue` : 'On track' },
@@ -133,7 +133,7 @@ export default function DashboardClient({
               </Link>
             )}
             <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.96 }} className="flex-1 sm:flex-none">
-              <Link href="/tasks/new" className="btn-shine h-11 px-5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2" style={{ background: 'linear-gradient(135deg,#6366F1,#8B5CF6)', boxShadow: '0 8px 22px rgba(99,102,241,.35)' }}>
+              <Link href="/tasks/new" className="btn-shine h-11 px-5 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2" style={{ background: 'var(--primary)', boxShadow: '0 8px 22px color-mix(in srgb, var(--primary) 35%, transparent)' }}>
                 <Plus className="w-4 h-4" />New task
               </Link>
             </motion.div>
@@ -181,8 +181,10 @@ export default function DashboardClient({
               <motion.div key={s.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 + i * 0.08, duration: 0.6, ease: ease.expo }}>
                 <TiltCard intensity={reduced ? 0 : 7} glare className="h-full">
                   <div className="h-full rounded-2xl p-5 border relative overflow-hidden" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)' }}>
-                    <div className="absolute -bottom-10 -right-10 w-32 h-32 rounded-full blur-2xl opacity-20 pointer-events-none" style={{ background: s.color }} aria-hidden="true" />
-                    <span className="relative w-10 h-10 rounded-xl flex items-center justify-center mb-4" style={{ background: `${s.color}22` }}><s.icon className="w-5 h-5" style={{ color: s.color }} /></span>
+                    <div className="absolute -bottom-10 -right-10 w-32 h-32 rounded-full blur-2xl opacity-20 pointer-events-none" style={{ background: s.color === 'var(--primary)' ? 'var(--primary)' : s.color }} aria-hidden="true" />
+                    <span className="relative w-10 h-10 rounded-xl flex items-center justify-center mb-4" style={{ background: s.color === 'var(--primary)' ? 'color-mix(in srgb, var(--primary) 15%, transparent)' : `${s.color}22` }}>
+                      <s.icon className="w-5 h-5" style={{ color: s.color }} />
+                    </span>
                     <p className="relative text-4xl font-black tabular-nums" style={{ color: 'var(--text-primary)' }}>{loading ? '–' : <AnimatedCounter value={s.value} />}</p>
                     <p className="relative text-sm font-semibold mt-1" style={{ color: 'var(--text-primary)' }}>{s.label}</p>
                     <p className="relative text-xs mt-0.5" style={{ color: s.color }}>{s.sub}</p>
@@ -292,7 +294,7 @@ export default function DashboardClient({
                 <p className="text-xs font-bold uppercase tracking-widest mb-3 px-1" style={{ color: 'var(--text-secondary)' }}>Quick actions</p>
                 <div className="grid grid-cols-2 gap-2">
                   {[
-                    { href: '/tasks/new', icon: Plus, label: 'New task', color: '#818CF8' },
+                    { href: '/tasks/new', icon: Plus, label: 'New task', color: 'var(--primary)' },
                     { href: '/standup', icon: FileText, label: 'Work log', color: '#34D399' },
                     { href: '/approvals', icon: ClipboardCheck, label: 'Request', color: '#FBBF24' },
                     { href: '/goals', icon: Target, label: 'Goals', color: '#F472B6' },
@@ -301,7 +303,9 @@ export default function DashboardClient({
                   ].map(a => (
                     <motion.div key={a.label} whileHover={{ y: -3 }} whileTap={{ scale: 0.95 }}>
                       <Link href={a.href} className="flex flex-col items-center justify-center gap-2 rounded-xl py-4 min-h-[80px] border transition-colors hover:bg-[var(--bg-elevated)]" style={{ borderColor: 'var(--border)' }}>
-                        <span className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: `${a.color}22` }}><a.icon className="w-4 h-4" style={{ color: a.color }} /></span>
+                        <span className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: a.color === 'var(--primary)' ? 'color-mix(in srgb, var(--primary) 15%, transparent)' : `${a.color}22` }}>
+                          <a.icon className="w-4 h-4" style={{ color: a.color }} />
+                        </span>
                         <span className="text-xs font-bold" style={{ color: 'var(--text-primary)' }}>{a.label}</span>
                       </Link>
                     </motion.div>

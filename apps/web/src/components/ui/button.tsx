@@ -1,5 +1,4 @@
 // apps/web/src/components/ui/button.tsx
-
 'use client'
 
 import * as React from 'react'
@@ -42,7 +41,7 @@ export function Button({
   style,
   ...props
 }: ButtonProps) {
-  const base = 'inline-flex items-center justify-center font-semibold transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none select-none'
+  const base = 'inline-flex items-center justify-center font-semibold transition-all duration-200 disabled:opacity-50 disabled:pointer-events-none select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-base)]'
 
   const operationalStyle = variant === 'primary'
     ? {

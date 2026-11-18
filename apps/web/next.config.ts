@@ -3,6 +3,13 @@ import type { NextConfig } from 'next'
 import path from 'path'
 
 const nextConfig: NextConfig = {
+  // --- SECURITY HARDENING ---
+  // Hides the "X-Powered-By: Next.js" header from response headers
+  poweredByHeader: false,
+  // Disables production source maps to make reverse-engineering harder
+  productionBrowserSourceMaps: false,
+  // --------------------------
+
   // Fix: Allow Next.js dev resources (HMR, fonts) from your local network IP.
   // This resolves the "403 Forbidden" errors on fonts and WebSockets when
   // you access the app via http://192.168.0.105:3000 instead of localhost.
@@ -23,6 +30,17 @@ const nextConfig: NextConfig = {
 
   headers: async () => [
     {
+      // Global Security Headers
+      source: '/:path*',
+      headers: [
+        { key: 'X-Content-Type-Options', value: 'nosniff' },
+        { key: 'X-Frame-Options', value: 'DENY' },
+        { key: 'X-XSS-Protection', value: '1; mode=block' },
+        { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+      ],
+    },
+    {
+      // Service Worker specific headers
       source: '/sw.js',
       headers: [
         { key: 'Cache-Control', value: 'public, max-age=0, must-revalidate' },

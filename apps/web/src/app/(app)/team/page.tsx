@@ -1,3 +1,4 @@
+// apps/web/src/app/(app)/team/page.tsx
 export const dynamic = 'force-dynamic';
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { getCurrentUser } from '@/lib/actions/auth'
@@ -9,7 +10,6 @@ export const metadata = { title: 'Team' }
 export default async function TeamPage() {
   const user = await getCurrentUser()
   if (!user) redirect('/login')
-  // Allow all roles to view team — managers see full detail, staff see basic view
 
   const supabase = await createServerSupabaseClient()
 
@@ -30,11 +30,19 @@ export default async function TeamPage() {
     .eq('workspace_id', user.workspaceId)
     .is('deleted_at', null)
 
+  // FETCH ROLES HERE
+  const { data: roles } = await supabase
+    .from('roles')
+    .select('id, name, level')
+    .eq('workspace_id', user.workspaceId)
+    .order('level', { ascending: true })
+
   return (
     <TeamClient
       members={(members as any[]) ?? []}
       taskCounts={(taskCounts as any[]) ?? []}
       currentUser={user}
+      roles={(roles as any[]) ?? []}
     />
   )
 }

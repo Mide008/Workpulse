@@ -11,7 +11,7 @@ export default function AcceptInviteClient() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const token = searchParams.get('token')
-  const [status, setStatus] = useState<'loading' | 'found' | 'invalid' | 'accepting' | 'done' | 'error'>('loading')
+  const [status, setStatus] = useState<'loading' | 'found' | 'invalid' | 'accepting' | 'done'>('loading')
   const [invite, setInvite] = useState<any>(null)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -20,92 +20,57 @@ export default function AcceptInviteClient() {
 
   useEffect(() => {
     if (!token) { setStatus('invalid'); return }
-    supabase
-      .from('invitations')
-      .select('id, email, role, status, expires_at, workspace_id, workspaces(name, primary_color)')
-      .eq('token', token)
-      .eq('status', 'pending')
-      .maybeSingle()
-      .then(({ data, error }) => {
-        if (error || !data) { setStatus('invalid'); return }
-        if (new Date((data as any).expires_at) < new Date()) { setStatus('invalid'); return }
-        setInvite(data)
-        setEmail((data as any).email)
+    
+    // Fetch from our API which bypasses RLS for guests
+    fetch(`/api/invitations/accept?token=${token}`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error('Invalid')
+        return res.json()
+      })
+      .then((data) => {
+        setInvite(data.invite)
+        setEmail(data.invite.email)
         setStatus('found')
+      })
+      .catch(() => {
+        setStatus('invalid')
       })
   }, [token])
 
   async function handleAccept(e: React.FormEvent) {
     e.preventDefault()
-    if (!invite) return
+    if (!invite || !token) return
     setStatus('accepting')
 
-    // Sign up the user
-    const { data: authData, error: signupError } = await supabase.auth.signUp({
-      email: email.trim().toLowerCase(),
-      password,
-      options: { data: { full_name: fullName.trim() } },
+    const res = await fetch('/api/invitations/accept', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, password, fullName: fullName.trim() }),
     })
 
-    if (signupError && !signupError.message.includes('already registered')) {
-      toast.error(signupError.message)
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}))
+      toast.error(body.error || 'Could not accept invitation')
       setStatus('found')
       return
     }
 
-    // If already registered, just sign in
-    if (signupError?.message.includes('already registered')) {
-      const { error: loginError } = await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(),
-        password,
-      })
-      if (loginError) { toast.error('Wrong password for existing account'); setStatus('found'); return }
-    }
-
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { setStatus('error'); return }
-
-    // Get workspace roles
-    const { data: roles } = await supabase
-      .from('roles')
-      .select('id, name, level')
-      .eq('workspace_id', (invite as any).workspace_id)
-
-    const matchedRole = (roles ?? []).find((r: any) =>
-      r.name.toLowerCase() === (invite as any).role?.toLowerCase()
-    )
-    const defaultRole = (roles ?? []).find((r: any) => r.level === 4) // Staff
-
-    // Create user profile
-    const { error: profileError } = await supabase
-      .from('users')
-      .upsert({
-        id: user.id,
-        workspace_id: (invite as any).workspace_id,
-        role_id: matchedRole?.id ?? defaultRole?.id ?? null,
-        full_name: fullName.trim() || user.user_metadata?.full_name || email.split('@')[0],
-        email: email.trim().toLowerCase(),
-        is_active: true,
-      })
-
-    if (profileError) {
-      console.error('Profile error:', profileError)
-      setStatus('error')
+    const { error: loginError } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password,
+    })
+    if (loginError) {
+      toast.error(loginError.message)
+      setStatus('found')
       return
     }
-
-    // Mark invitation as accepted
-    await supabase
-      .from('invitations')
-      .update({ status: 'accepted' })
-      .eq('id', (invite as any).id)
 
     toast.success('Welcome to the team!')
     setStatus('done')
     setTimeout(() => router.push('/dashboard'), 1500)
   }
 
-  const workspace = (invite as any)?.workspaces
+  const workspace = invite?.workspaces
   const brandColor = workspace?.primary_color ?? '#6366F1'
 
   if (status === 'loading') {
@@ -150,7 +115,6 @@ export default function AcceptInviteClient() {
         <div className="flex justify-center mb-8"><WorkPulseLogo /></div>
 
         <div className="bg-[var(--bg-surface)]/60 border border-[var(--border)][0.06] rounded-2xl p-8">
-          {/* Workspace badge */}
           <div className="flex items-center gap-3 mb-6 p-4 rounded-xl"
             style={{ backgroundColor: `${brandColor}15`, border: `1px solid ${brandColor}30` }}>
             <div className="w-10 h-10 rounded-xl flex items-center justify-center text-[var(--text-primary)] font-bold"
@@ -159,7 +123,7 @@ export default function AcceptInviteClient() {
             </div>
             <div>
               <p className="text-[var(--text-primary)] font-semibold">{workspace?.name ?? 'WorkPulse'}</p>
-              <p className="text-[var(--text-secondary)] text-sm">You've been invited as <strong className="text-[var(--text-primary)]">{(invite as any)?.role}</strong></p>
+              <p className="text-[var(--text-secondary)] text-sm">You've been invited as <strong className="text-[var(--text-primary)]">{invite?.role}</strong></p>
             </div>
           </div>
 

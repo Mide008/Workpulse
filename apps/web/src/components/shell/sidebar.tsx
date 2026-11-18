@@ -10,7 +10,7 @@ import {
   MessageSquare, Settings, Target, Bell, LogOut, X, TrendingUp,
   Building2, Activity, CreditCard, Bot, Shield, UserCog,
   ChevronLeft, ChevronRight, ChevronDown,
-  FileText, ClipboardCheck,
+  FileText, ClipboardCheck, Clock,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { WorkPulseLogo } from '@/components/ui/logo'
@@ -23,7 +23,9 @@ const NAV = [
   { href: '/tasks', label: 'My Tasks', icon: CheckSquare },
   { href: '/projects', label: 'Projects', icon: FolderKanban },
   { href: '/analytics', label: 'Analytics', icon: BarChart3, minLevel: 2 },
-  { href: '/team', label: 'Team', icon: Users, minLevel: 2 },
+  { href: '/team', label: 'Team', icon: Users },
+  { href: '/attendance', label: 'My Attendance', icon: Clock },
+  { href: '/attendance/manage', label: 'Team Attendance', icon: Users, minLevel: 2 },
   { href: '/goals', label: 'Goals', icon: Target },
   { href: '/standup', label: 'Work Log', icon: FileText },
   { href: '/approvals', label: 'Approvals', icon: ClipboardCheck },
@@ -39,15 +41,15 @@ const CRM_NAV = [
 ]
 
 const ADMIN_NAV = [
-  { href: '/audit', label: 'Audit Trail', icon: Shield, minLevel: 1 },
+  { href: '/audit', label: 'Audit Trail', icon: Shield, minLevel: 2 },
   { href: '/hr', label: 'HR', icon: UserCog, minLevel: 2 },
 ]
 
 const SETTINGS_NAV = [
   { href: '/settings/workspace', label: 'Workspace' },
   { href: '/settings/profile', label: 'Profile' },
-  { href: '/settings/integrations', label: 'Integrations', minLevel: 1 },
-  { href: '/settings/billing', label: 'Billing', minLevel: 1 },
+  { href: '/settings/integrations', label: 'Integrations', minLevel: 2 },
+  { href: '/settings/billing', label: 'Billing', minLevel: 2 },
 ]
 
 interface SidebarProps {
@@ -228,7 +230,6 @@ export default function Sidebar({ user, open, onClose }: SidebarProps) {
               className="px-4 py-3 border-b border-[var(--border)] shrink-0 overflow-hidden"
             >
               <div className="flex items-center gap-3 px-2 py-2 rounded-xl bg-[var(--bg-base)] border border-[var(--border)]">
-                {/* FIX: Changed to white background with border to accommodate any logo */}
                 <div
                   className="w-7 h-7 rounded-md flex items-center justify-center text-xs font-bold text-black shrink-0 overflow-hidden shadow-sm bg-white border border-gray-200 dark:border-zinc-700"
                 >
