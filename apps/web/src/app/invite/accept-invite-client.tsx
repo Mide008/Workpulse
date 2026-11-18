@@ -1,3 +1,4 @@
+// apps/web/src/app/invite/accept-invite-client.tsx
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -21,7 +22,6 @@ export default function AcceptInviteClient() {
   useEffect(() => {
     if (!token) { setStatus('invalid'); return }
     
-    // Fetch from our API which bypasses RLS for guests
     fetch(`/api/invitations/accept?token=${token}`)
       .then(async (res) => {
         if (!res.ok) throw new Error('Invalid')
@@ -72,6 +72,10 @@ export default function AcceptInviteClient() {
 
   const workspace = invite?.workspaces
   const brandColor = workspace?.primary_color ?? '#6366F1'
+  
+  // Extract role and job title correctly
+  const roleName = invite?.role?.name || 'Team Member'
+  const jobTitle = invite?.job_title
 
   if (status === 'loading') {
     return (
@@ -123,7 +127,10 @@ export default function AcceptInviteClient() {
             </div>
             <div>
               <p className="text-[var(--text-primary)] font-semibold">{workspace?.name ?? 'WorkPulse'}</p>
-              <p className="text-[var(--text-secondary)] text-sm">You've been invited as <strong className="text-[var(--text-primary)]">{invite?.role}</strong></p>
+              {/* FIXED UX: Shows Job Title and Role properly */}
+              <p className="text-[var(--text-secondary)] text-sm">
+                You've been invited {jobTitle ? `as ${jobTitle}` : ''} {roleName ? `(${roleName})` : ''}
+              </p>
             </div>
           </div>
 

@@ -9,9 +9,10 @@ export async function GET(req: NextRequest) {
 
   const supabaseAdmin = createAdminClient()
   
+  // Added role:roles(name) to fetch the actual role name from the database
   const { data, error } = await supabaseAdmin
     .from('invitations')
-    .select('*, workspaces(name, primary_color)')
+    .select('*, workspaces(name, primary_color), role:roles(name)')
     .eq('token', token)
     .eq('status', 'pending')
     .maybeSingle()
