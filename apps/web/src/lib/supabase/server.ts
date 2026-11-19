@@ -1,3 +1,6 @@
+// apps/web/src/lib/supabase/server.ts
+import 'server-only' // <-- CRITICAL SECURITY FIX: Prevents admin client from leaking to the browser
+
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import type { Database } from '@/types/database.types'

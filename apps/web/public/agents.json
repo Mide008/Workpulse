@@ -1,0 +1,33 @@
+{
+  "name": "WorkPulse",
+  "description": "Team Operating System for tasks, KPIs, approvals, CRM, and attendance.",
+  "version": "1.0.0",
+  "base_url": "https://workpulse-eta.vercel.app",
+  "capabilities": [
+    {
+      "name": "create_task",
+      "description": "Create a new task in a project",
+      "endpoint": "/api/tasks",
+      "method": "POST",
+      "auth_required": true,
+      "idempotent": true
+    },
+    {
+      "name": "log_work",
+      "description": "Submit a daily work log with optional blockers",
+      "endpoint": "/api/standup",
+      "method": "POST",
+      "auth_required": true,
+      "idempotent": false
+    },
+    {
+      "name": "request_approval",
+      "description": "Submit a request for manager approval (leave, expense, etc.)",
+      "endpoint": "/api/approvals",
+      "method": "POST",
+      "auth_required": true,
+      "idempotent": false
+    }
+  ],
+  "contact": "support@workpulse.io"
+}

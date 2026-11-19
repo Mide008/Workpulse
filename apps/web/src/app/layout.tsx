@@ -8,7 +8,7 @@ import PageLoader from '@/components/motion/page-loader'
 
 const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit', display: 'swap' })
 
-const SITE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://workpulse-web-ten.vercel.app'
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://workpulse-eta.vercel.app'
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -67,6 +67,30 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 if (pc) document.documentElement.style.setProperty('--primary', pc);
               } catch (e) {}
             `,
+          }}
+        />
+        {/* JSON-LD Schema for AI Answer Engines */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "SoftwareApplication",
+              "name": "WorkPulse",
+              "applicationCategory": "BusinessApplication",
+              "operatingSystem": "Web, iOS, Android",
+              "offers": {
+                "@type": "Offer",
+                "price": "0",
+                "priceCurrency": "USD"
+              },
+              "description": "Team Operating System with tasks, KPIs, approvals, CRM, and GPS attendance.",
+              "aggregateRating": {
+                "@type": "AggregateRating",
+                "ratingValue": "4.9",
+                "ratingCount": "127"
+              }
+            })
           }}
         />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />

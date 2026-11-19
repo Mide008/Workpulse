@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Search, Plus, X, Loader2, Mail, Phone, Building2,
-  User, Tag, MoreHorizontal, Trash2, Edit3, ChevronDown,
+  User, MoreHorizontal, Trash2,
 } from 'lucide-react'
 import { cn, getInitials } from '@/lib/utils'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
@@ -96,7 +96,7 @@ export default function ContactsClient({ contacts: initial, companies, members, 
     setForm({ fullName: '', email: '', phone: '', jobTitle: '', companyId: '', status: 'lead', source: '', notes: '', tags: '' })
   }
 
-  const inputClass = 'w-full h-10 px-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30'
+  const inputClass = 'w-full h-10 px-3 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/30'
   const inputStyle = { background: 'var(--bg-elevated)', borderColor: 'var(--border)', color: 'var(--text-primary)' }
 
   const ContactForm = (
@@ -156,7 +156,7 @@ export default function ContactsClient({ contacts: initial, companies, members, 
           <label className="block text-xs font-medium mb-1.5" style={{ color: 'var(--text-secondary)' }}>Notes</label>
           <textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))}
             rows={3} placeholder="Any relevant context about this contact..."
-            className="w-full px-3 py-2.5 rounded-xl border text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+            className="w-full px-3 py-2.5 rounded-xl border text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/30"
             style={inputStyle} />
         </div>
       </div>
@@ -201,7 +201,7 @@ export default function ContactsClient({ contacts: initial, companies, members, 
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search by name, email, company..."
-            className="w-full h-10 pl-9 pr-4 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+            className="w-full h-10 pl-9 pr-4 rounded-xl border text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/30"
             style={{ background: 'var(--bg-surface)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
           />
         </div>

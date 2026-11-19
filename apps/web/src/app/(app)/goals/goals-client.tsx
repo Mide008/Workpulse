@@ -3,7 +3,7 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Target, Plus, ChevronDown, Check, X, Loader2, TrendingUp } from 'lucide-react'
+import { Target, Plus, ChevronDown, X, TrendingUp } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -16,7 +16,6 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { scaleIn } from '@/lib/motion'
 import { EmptyState } from '@/components/ui/empty-state'
 
-// Schema: targetValue is required (no .default())
 const schema = z.object({
   userId: z.string().uuid('Please select a team member'),
   title: z.string().min(1, 'Title required'),
@@ -28,7 +27,7 @@ const schema = z.object({
   dueDate: z.string().min(1, 'Due date required'),
 })
 
-type FormValues = z.infer<typeof schema>  // Now targetValue is required
+type FormValues = z.infer<typeof schema>
 
 const statusBadge: Record<string, BadgeVariant> = {
   active: 'info',
@@ -59,7 +58,6 @@ export default function GoalsClient({
   const [showModal, setShowModal] = useState(false)
   const isManager = currentUser.roleLevel <= 2
 
-  // Check-in state
   const [checkingIn, setCheckingIn] = useState<string | null>(null)
   const [checkinNote, setCheckinNote] = useState('')
   const [checkinValue, setCheckinValue] = useState<number>(0)
@@ -215,7 +213,6 @@ export default function GoalsClient({
                   <Progress value={pct} color={pct >= 100 ? 'emerald' : pct >= 60 ? 'indigo' : 'amber'} size="md" />
                 </div>
 
-                {/* Check-in button */}
                 <div className="mt-4 flex justify-end">
                   <button
                     onClick={() => {
@@ -253,8 +250,8 @@ export default function GoalsClient({
             >
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-indigo-500/10 flex items-center justify-center">
-                    <Target className="w-5 h-5 text-indigo-400" />
+                  <div className="w-9 h-9 rounded-xl bg-[var(--primary)]/10 flex items-center justify-center">
+                    <Target className="w-5 h-5 text-[var(--primary)]" />
                   </div>
                   <h3 className="text-[var(--text-primary)] font-semibold text-lg">Set a goal</h3>
                 </div>
@@ -273,7 +270,7 @@ export default function GoalsClient({
                     <div className="relative">
                       <select
                         {...register('userId')}
-                        className="w-full appearance-none bg-white/[0.04] border border-[var(--border)]10 rounded-xl px-4 py-2.5 pr-8 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500/50 hover:border-[var(--border)]20 transition-all cursor-pointer"
+                        className="w-full appearance-none bg-white/[0.04] border border-[var(--border)]10 rounded-xl px-4 py-2.5 pr-8 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/50 hover:border-[var(--border)]20 transition-all cursor-pointer"
                       >
                         {members.map(m => (
                           <option key={m.id} value={m.id} className="bg-slate-900 text-white">
@@ -292,7 +289,7 @@ export default function GoalsClient({
                   <input
                     {...register('title')}
                     placeholder="e.g. Close 10 deals this month"
-                    className="w-full bg-white/[0.04] border border-[var(--border)]10 rounded-xl px-4 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 hover:border-[var(--border)]20 transition-all"
+                    className="w-full bg-white/[0.04] border border-[var(--border)]10 rounded-xl px-4 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/50 hover:border-[var(--border)]20 transition-all"
                   />
                   {errors.title && <p className="text-red-400 text-xs mt-1">{errors.title.message}</p>}
                 </div>
@@ -304,7 +301,7 @@ export default function GoalsClient({
                       {...register('targetValue')}
                       type="number"
                       placeholder="100"
-                      className="w-full bg-white/[0.04] border border-[var(--border)]10 rounded-xl px-4 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 hover:border-[var(--border)]20 transition-all"
+                      className="w-full bg-white/[0.04] border border-[var(--border)]10 rounded-xl px-4 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/50 hover:border-[var(--border)]20 transition-all"
                     />
                     {errors.targetValue && <p className="text-red-400 text-xs mt-1">{errors.targetValue.message}</p>}
                   </div>
@@ -313,7 +310,7 @@ export default function GoalsClient({
                     <input
                       {...register('metricLabel')}
                       placeholder="e.g. deals, tasks, %"
-                      className="w-full bg-white/[0.04] border border-[var(--border)]10 rounded-xl px-4 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 hover:border-[var(--border)]20 transition-all"
+                      className="w-full bg-white/[0.04] border border-[var(--border)]10 rounded-xl px-4 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/50 hover:border-[var(--border)]20 transition-all"
                     />
                   </div>
                 </div>
@@ -324,7 +321,7 @@ export default function GoalsClient({
                     <div className="relative">
                       <select
                         {...register('period')}
-                        className="w-full appearance-none bg-white/[0.04] border border-[var(--border)]10 rounded-xl px-3 py-2.5 pr-7 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500/50 cursor-pointer"
+                        className="w-full appearance-none bg-white/[0.04] border border-[var(--border)]10 rounded-xl px-3 py-2.5 pr-7 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/50 cursor-pointer"
                       >
                         <option value="monthly" className="bg-slate-900 text-white">Monthly</option>
                         <option value="quarterly" className="bg-slate-900 text-white">Quarterly</option>
@@ -338,7 +335,7 @@ export default function GoalsClient({
                     <input
                       {...register('startDate')}
                       type="date"
-                      className="w-full bg-white/[0.04] border border-[var(--border)]10 rounded-xl px-3 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500/50 [color-scheme:dark]"
+                      className="w-full bg-white/[0.04] border border-[var(--border)]10 rounded-xl px-3 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/50 [color-scheme:dark]"
                     />
                     {errors.startDate && <p className="text-red-400 text-xs mt-1">{errors.startDate.message}</p>}
                   </div>
@@ -347,7 +344,7 @@ export default function GoalsClient({
                     <input
                       {...register('dueDate')}
                       type="date"
-                      className="w-full bg-white/[0.04] border border-[var(--border)]10 rounded-xl px-3 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500/50 [color-scheme:dark]"
+                      className="w-full bg-white/[0.04] border border-[var(--border)]10 rounded-xl px-3 py-2.5 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/50 [color-scheme:dark]"
                     />
                     {errors.dueDate && <p className="text-red-400 text-xs mt-1">{errors.dueDate.message}</p>}
                   </div>
@@ -413,7 +410,7 @@ export default function GoalsClient({
                         step={1}
                         value={checkinValue}
                         onChange={e => setCheckinValue(Number(e.target.value))}
-                        className="flex-1 accent-indigo-600"
+                        className="flex-1 accent-[var(--primary)]"
                         style={{ accentColor: 'var(--primary)' }}
                       />
                       <span className="w-12 text-sm font-bold text-right" style={{ color: 'var(--text-primary)' }}>
@@ -430,7 +427,7 @@ export default function GoalsClient({
                       onChange={e => setCheckinNote(e.target.value)}
                       rows={3}
                       placeholder="What progress was made? Any blockers?"
-                      className="w-full rounded-xl border px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500/30"
+                      className="w-full rounded-xl border px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/30"
                       style={{ background: 'var(--bg-elevated)', borderColor: 'var(--border)', color: 'var(--text-primary)' }}
                     />
                   </div>

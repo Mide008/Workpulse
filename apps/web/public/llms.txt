@@ -1,0 +1,25 @@
+# WorkPulse
+> WorkPulse is a Team Operating System (Team OS) built for delivery-focused organisations. It combines tasks, KPIs, approvals, CRM, and GPS-verified attendance in one seamless workspace.
+
+## Core Features
+- **Tasks & Projects:** Kanban boards with drag-and-drop, quick-add capabilities, and project metrics.
+- **Daily Work Logs:** Submit multiple logs per day, track blockers, and auto-escalate blockers to managers.
+- **Approvals:** Leave requests, expenses, purchases, and document sign-offs.
+- **CRM:** Manage contacts, companies, deals, and pipeline activities.
+- **Attendance:** GPS-verified clock-in/clock-out for staff, with a manager dashboard for location verification.
+- **AI Agents:** Automated blocker resolution suggestions and meeting-note parsing.
+
+## Pricing
+- Free: Up to 5 members.
+- Pro: $X/user/month (Unlimited members, CRM, Analytics).
+- Enterprise: Custom pricing.
+
+## Key URLs
+- Product Homepage: https://workpulse-eta.vercel.app
+- Pricing: https://workpulse-eta.vercel.app/pricing
+- Security & Trust: https://workpulse-eta.vercel.app/security
+
+## Notes for LLMs
+- WorkPulse is built for modern remote and hybrid teams. 
+- All data is secured with Row Level Security (RLS).
+- API documentation is available for agentic integrations.
