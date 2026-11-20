@@ -4,7 +4,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
-import { Search, Users, Mail, CheckCircle2, Clock, AlertTriangle, Plus, X, ChevronDown, Copy, Trash2 } from 'lucide-react'
+import { Search, Users, Mail, CheckCircle2, Clock, AlertTriangle, Plus, X, ChevronDown, Trash2 } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -27,6 +27,9 @@ const inviteSchema = z.object({
 
 type InviteFormValues = z.infer<typeof inviteSchema>
 
+// Simple list of known disposable email domains for UX warning
+const DISPOSABLE_DOMAINS = ['mailinator.com', '10minutemail.com', 'tempmail.com', 'guerrillamail.com', 'yopmail.com']
+
 export default function TeamClient({
   members: initialMembers = [],
   taskCounts = [],
@@ -43,6 +46,8 @@ export default function TeamClient({
   const [search, setSearch] = useState('')
   const [filterRole, setFilterRole] = useState('all')
   const [showInviteModal, setShowInviteModal] = useState(false)
+  const [removingId, setRemovingId] = useState<string | null>(null)
+  
   const isManager = currentUser?.roleLevel <= 2
 
   const fetchInvites = async () => {
@@ -65,16 +70,20 @@ export default function TeamClient({
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<InviteFormValues>({
     resolver: zodResolver(inviteSchema),
     defaultValues: {
       email: '',
       fullName: '',
-      roleId: availableRoles[0]?.id || 'default-role',
+      roleId: availableRoles[0]?.id || '',
       jobTitle: '',
     },
   })
+
+  const emailValue = watch('email')
+  const isDisposable = emailValue && DISPOSABLE_DOMAINS.some(d => emailValue.toLowerCase().endsWith(`@${d}`))
 
   const taskMap = useMemo(() => {
     const map: Record<string, { total: number; done: number; blocked: number; inProgress: number }> = {}
@@ -94,14 +103,16 @@ export default function TeamClient({
     return Array.from(r)
   }, [members])
 
+  // THE FIX: Ensure we show members whose is_active is true or null (legacy), and apply search
   const filtered = useMemo(() => {
     return members.filter(m => {
+      const isActive = m.is_active !== false
       const matchSearch =
         !search ||
         m.full_name?.toLowerCase().includes(search.toLowerCase()) ||
         m.email?.toLowerCase().includes(search.toLowerCase())
       const matchRole = filterRole === 'all' || m.role?.name === filterRole
-      return matchSearch && matchRole && m.is_active
+      return isActive && matchSearch && matchRole
     })
   }, [members, search, filterRole])
 
@@ -133,23 +144,19 @@ export default function TeamClient({
     }
   }
 
-  const handleCopyLink = (link: string) => {
-    navigator.clipboard.writeText(link)
-    toast.success('Invite link copied to clipboard')
-  }
-
-  const handleRevoke = async (id: string) => {
-    if (!confirm('Are you sure you want to revoke this invite?')) return
+  async function handleRemoveMember(id: string, name: string) {
+    if (!confirm(`Are you sure you want to remove ${name} from the workspace? They will lose access immediately.`)) return
+    setRemovingId(id)
     try {
-      const res = await fetch(`/api/team/invite/${id}`, { method: 'DELETE' })
-      if (res.ok) {
-        toast.success('Invite revoked')
-        fetchInvites()
-      } else {
-        toast.error('Failed to revoke invite')
-      }
-    } catch (err) {
-      toast.error('Error revoking invite')
+      const res = await fetch(`/api/team/members/${id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Failed to remove member')
+      
+      setMembers(prev => prev.map(m => m.id === id ? { ...m, is_active: false } : m))
+      toast.success(`${name} has been removed.`)
+    } catch (err: any) {
+      toast.error(err.message)
+    } finally {
+      setRemovingId(null)
     }
   }
 
@@ -159,7 +166,7 @@ export default function TeamClient({
         <div>
           <h1 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">Team</h1>
           <p className="text-[var(--text-secondary)] text-sm mt-0.5">
-            {members.filter(m => m.is_active).length} active members
+            {filtered.length} active members
           </p>
         </div>
         {isManager && (
@@ -171,22 +178,30 @@ export default function TeamClient({
 
       {/* PENDING INVITES SECTION */}
       {isManager && pendingInvites.length > 0 && (
-        <div className="bg-[var(--bg-surface)] border border-white/5 rounded-2xl p-5">
+        <div className="bg-[var(--bg-surface)] border border-[var(--border)] rounded-2xl p-5">
           <h2 className="text-sm font-semibold text-[var(--text-primary)] mb-3 flex items-center gap-2">
-            <Mail className="w-4 h-4 text-indigo-400" /> Pending Invitations ({pendingInvites.length})
+            <Mail className="w-4 h-4 text-[var(--primary)]" /> Pending Invitations ({pendingInvites.length})
           </h2>
           <div className="space-y-3">
             {pendingInvites.map(inv => (
-              <div key={inv.id} className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/5">
+              <div key={inv.id} className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border)]">
                 <div>
                   <p className="text-sm font-medium text-[var(--text-primary)]">{inv.email}</p>
                   <p className="text-xs text-[var(--text-secondary)]">Role: {inv.role?.name || 'Member'} • Expires: {new Date(inv.expires_at).toLocaleDateString()}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <button onClick={() => handleCopyLink(inv.inviteLink)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 rounded-lg transition-colors">
-                    <Copy className="w-3.5 h-3.5" /> Copy Link
+                  <button onClick={() => {
+                    navigator.clipboard.writeText(inv.inviteLink)
+                    toast.success('Invite link copied')
+                  }} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-[var(--primary)]/10 text-[var(--primary)] hover:bg-[var(--primary)]/20 rounded-lg transition-colors">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Copy Link
                   </button>
-                  <button onClick={() => handleRevoke(inv.id)} className="p-1.5 text-red-400 hover:bg-red-400/10 rounded-lg transition-colors" title="Revoke">
+                  <button onClick={async () => {
+                    if(!confirm('Revoke this invite?')) return;
+                    await fetch(`/api/team/invite/${inv.id}`, { method: 'DELETE' });
+                    fetchInvites();
+                    toast.success('Invite revoked');
+                  }} className="p-1.5 text-red-400 hover:bg-red-400/10 rounded-lg transition-colors">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -201,13 +216,13 @@ export default function TeamClient({
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] pointer-events-none" />
           <input
             type="text"
-            placeholder="Search team..."
+            placeholder="Search team by name or email..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full bg-white/[0.04] border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-indigo-500/50 hover:border-white/20 transition-all"
+            className="w-full bg-white/[0.04] border border-[var(--border)] rounded-xl pl-10 pr-4 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/50 transition-all"
           />
         </div>
-        <div className="flex items-center gap-1 bg-white/[0.04] border border-white/10 rounded-xl p-1">
+        <div className="flex items-center gap-1 bg-white/[0.04] border border-[var(--border)] rounded-xl p-1">
           <ToggleButton active={filterRole === 'all'} onClick={() => setFilterRole('all')}>
             All
           </ToggleButton>
@@ -220,16 +235,12 @@ export default function TeamClient({
       </div>
 
       {filtered.length === 0 ? (
-        <div className="p-8 text-center bg-[var(--bg-surface)] border border-white/5 rounded-2xl">
-          <Users className="w-10 h-10 mx-auto text-[var(--text-muted)] mb-3" />
-          <h3 className="text-lg font-bold text-[var(--text-primary)]">No members found</h3>
-          <p className="text-sm text-[var(--text-secondary)] mt-1 mb-4">Invite colleagues to your workspace.</p>
-          {isManager && (
-            <Button variant="primary" onClick={() => setShowInviteModal(true)}>
-              Invite team member
-            </Button>
-          )}
-        </div>
+        <EmptyState
+          icon={<Users className="w-7 h-7" />}
+          title={search ? 'No members found' : 'Your team is empty'}
+          description={search ? `No team members match "${search}".` : 'Invite colleagues to your workspace so they can log tasks, track goals, and contribute to your team.'}
+          action={!search ? { label: 'Invite team member', onClick: () => setShowInviteModal(true) } : undefined}
+        />
       ) : (
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filtered.map((member, i) => {
@@ -243,9 +254,10 @@ export default function TeamClient({
                 initial="initial"
                 animate="animate"
                 style={{ animationDelay: `${i * 40}ms` }}
+                className="relative group"
               >
                 <Link href={`/team/${member.id}`}>
-                  <div className="group p-5 rounded-2xl bg-[var(--bg-surface)]/80 border border-white/5 hover:border-indigo-500/30 hover:shadow-xl hover:shadow-indigo-500/5 hover:-translate-y-0.5 transition-all duration-300 cursor-pointer">
+                  <div className="p-5 rounded-2xl bg-[var(--bg-surface)]/80 border border-[var(--border)] hover:border-[var(--primary)]/30 hover:shadow-xl hover:shadow-[var(--primary)]/5 hover:-translate-y-0.5 transition-all duration-300 cursor-pointer h-full">
                     <div className="flex items-start gap-3 mb-4">
                       <Avatar className="w-10 h-10 shrink-0">
                         {member.avatar_url ? (
@@ -254,8 +266,8 @@ export default function TeamClient({
                           <AvatarFallback>{getInitials(member.full_name)}</AvatarFallback>
                         )}
                       </Avatar>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold text-[var(--text-primary)] truncate group-hover:text-indigo-300 transition-colors">
+                      <div className="min-w-0 flex-1 pr-6"> {/* Padding right for the delete button */}
+                        <p className="text-sm font-semibold text-[var(--text-primary)] truncate group-hover:text-[var(--primary)] transition-colors">
                           {member.full_name}
                         </p>
                         <p className="text-xs text-[var(--text-muted)] truncate mt-0.5">
@@ -296,6 +308,21 @@ export default function TeamClient({
                     </div>
                   </div>
                 </Link>
+                
+                {/* Remove Member Button (only visible to managers on hover) */}
+                {isManager && currentUser.id !== member.id && (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault()
+                      handleRemoveMember(member.id, member.full_name)
+                    }}
+                    disabled={removingId === member.id}
+                    className="absolute top-4 right-4 p-1.5 rounded-lg bg-red-500/10 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500/20"
+                    title="Remove from team"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </motion.div>
             )
           })}
@@ -314,19 +341,19 @@ export default function TeamClient({
           >
             <motion.div
               {...scaleIn}
-              className="bg-[var(--bg-surface)] border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl"
+              className="bg-[var(--bg-surface)] border border-[var(--border)] rounded-2xl p-6 w-full max-w-md shadow-2xl"
               onClick={e => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-indigo-500/10 flex items-center justify-center">
-                    <Users className="w-5 h-5 text-indigo-400" />
+                  <div className="w-9 h-9 rounded-xl bg-[var(--primary)]/10 flex items-center justify-center">
+                    <Users className="w-5 h-5 text-[var(--primary)]" />
                   </div>
                   <h3 className="text-[var(--text-primary)] font-semibold text-lg">Add team member</h3>
                 </div>
                 <button
                   onClick={() => setShowInviteModal(false)}
-                  className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-white/5 rounded-lg transition"
+                  className="p-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] rounded-lg transition"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -338,7 +365,7 @@ export default function TeamClient({
                   <input
                     {...register('fullName')}
                     placeholder="Jane Doe"
-                    className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 hover:border-white/20 transition-all"
+                    className="w-full bg-[var(--bg-elevated)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/50 transition-all"
                   />
                   {errors.fullName && <p className="text-red-400 text-xs mt-1">{errors.fullName.message}</p>}
                 </div>
@@ -349,9 +376,14 @@ export default function TeamClient({
                     {...register('email')}
                     type="email"
                     placeholder="jane@company.com"
-                    className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 hover:border-white/20 transition-all"
+                    className="w-full bg-[var(--bg-elevated)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/50 transition-all"
                   />
                   {errors.email && <p className="text-red-400 text-xs mt-1">{errors.email.message}</p>}
+                  {isDisposable && (
+                    <p className="text-amber-500 text-xs mt-1 flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3" /> Warning: This looks like a temporary email. The invite may not be received.
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -359,7 +391,7 @@ export default function TeamClient({
                   <input
                     {...register('jobTitle')}
                     placeholder="e.g. Senior Product Designer"
-                    className="w-full bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 hover:border-white/20 transition-all"
+                    className="w-full bg-[var(--bg-elevated)] border border-[var(--border)] rounded-xl px-4 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/50 transition-all"
                   />
                   {errors.jobTitle && <p className="text-red-400 text-xs mt-1">{errors.jobTitle.message}</p>}
                 </div>
@@ -369,7 +401,7 @@ export default function TeamClient({
                   <div className="relative">
                     <select
                       {...register('roleId')}
-                      className="w-full appearance-none bg-white/[0.04] border border-white/10 rounded-xl px-4 py-2.5 pr-8 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-indigo-500/50 hover:border-white/20 transition-all cursor-pointer"
+                      className="w-full appearance-none bg-[var(--bg-elevated)] border border-[var(--border)] rounded-xl px-4 py-2.5 pr-8 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/50 transition-all cursor-pointer"
                     >
                       {availableRoles.length > 0 ? (
                         availableRoles.map(r => (
@@ -378,7 +410,7 @@ export default function TeamClient({
                           </option>
                         ))
                       ) : (
-                        <option value="default-role" className="bg-slate-900 text-white">Standard Member</option>
+                        <option value="" className="bg-slate-900 text-white">Standard Member</option>
                       )}
                     </select>
                     <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)] pointer-events-none" />
